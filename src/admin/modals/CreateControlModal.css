@@ -1,0 +1,19 @@
+/* Extends CreateFrameworkModal.css with additional styles for larger modal */
+
+.modal-large {
+  max-width: 700px;
+}
+
+.helper-text {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Style for uppercase input */
+input[style*="text-transform: uppercase"] {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
