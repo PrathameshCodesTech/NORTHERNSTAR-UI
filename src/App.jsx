@@ -1,3 +1,4 @@
+// src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
@@ -16,12 +17,14 @@ import Signup from './pages/Signup';
 // Admin Components
 import AdminLayout from './admin/components/AdminLayout';
 import FrameworkDashboard from './admin/pages/FrameworkDashboard';
-import DomainView from './admin/pages/DomainView';
+import DomainView from './admin/pages/DomainView'; // ✅ Handles both cases
 import CategoryView from './admin/pages/CategoryView';
 import SubcategoryView from './admin/pages/SubcategoryView';
 import ControlList from './admin/pages/ControlList';
 import QuestionList from './admin/pages/QuestionList';
 import EvidenceList from './admin/pages/EvidenceList';
+
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -44,17 +47,25 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* Admin Routes with AdminLayout (Sidebar + Content) */}
-        <Route path="/admin" element={<AdminLayout />}>
+        {/* Admin Routes with AdminLayout (Sidebar + Content) - PROTECTED */}
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
           <Route index element={<FrameworkDashboard />} />
           <Route path="frameworks" element={<FrameworkDashboard />} />
+          
+          {/* ✅ SIMPLE: One component handles both global + framework-specific */}
           <Route path="domains" element={<DomainView />} />
+          
           <Route path="categories" element={<CategoryView />} />
           <Route path="subcategories" element={<SubcategoryView />} />
           <Route path="controls" element={<ControlList />} />
           <Route path="questions" element={<QuestionList />} />
           <Route path="evidence" element={<EvidenceList />} />
         </Route>
+
       </Routes>
     </Router>
   );

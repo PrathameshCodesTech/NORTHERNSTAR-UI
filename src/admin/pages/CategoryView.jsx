@@ -1,106 +1,158 @@
-import React, { useState } from 'react';
+// src/admin/pages/CategoryView.jsx
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import BreadcrumbNav from '../components/BreadcrumbNav';
 import SearchBar from '../components/SearchBar';
 import EntityCard from '../components/EntityCard';
 import EmptyState from '../components/EmptyState';
+import StatsCard from '../components/StatsCard';
 import CreateCategoryModal from '../modals/CreateCategoryModal';
+import LinkDomainModal from '../modals/LinkDomainModal';
+import ViewDomainTooltip from '../modals/ViewDomainTooltip';
+import { domainAPI, categoryAPI } from '../../services/templateService';
 import './CategoryView.css';
-
 
 const CategoryView = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const domainId = searchParams.get('domain');
-
+  
+  const [allDomains, setAllDomains] = useState([]);
+  const [linkedCategories, setLinkedCategories] = useState([]);
+  const [unlinkedCategories, setUnlinkedCategories] = useState([]);
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  
   const [activeTab, setActiveTab] = useState('linked');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  
   const [editingCategory, setEditingCategory] = useState(null);
+  const [linkingCategory, setLinkingCategory] = useState(null);
+  const [viewingDomain, setViewingDomain] = useState(null);
 
-  // Mock data - replace with API call
-  const domain = {
-    id: domainId || '1',
-    name: 'IT General Controls',
-    code: 'ITGC',
-    framework: { id: '1', name: 'SOX', version: '2024.1' }
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const domainsResponse = await domainAPI.getAll();
+      const domainsArray = Array.isArray(domainsResponse) 
+        ? domainsResponse 
+        : domainsResponse?.results || [];
+      setAllDomains(domainsArray);
+
+      const categoriesResponse = await categoryAPI.getAll();
+      const categoriesArray = Array.isArray(categoriesResponse) 
+        ? categoriesResponse 
+        : categoriesResponse?.results || [];
+
+      const linked = categoriesArray.filter(c => c.domain);
+      const unlinked = categoriesArray.filter(c => !c.domain);
+
+      setLinkedCategories(linked);
+      setUnlinkedCategories(unlinked);
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const [domains] = useState([
-    { id: '1', name: 'IT General Controls', code: 'ITGC' },
-    { id: '2', name: 'Business Process Controls', code: 'BPC' },
-    { id: '3', name: 'Application Controls', code: 'AC' }
-  ]);
-
-  const [linkedCategories, setLinkedCategories] = useState([
-    {
-      id: '1',
-      name: 'Access Controls',
-      code: 'AC',
-      description: 'Controls for managing user access to systems',
-      sort_order: 1
-    },
-    {
-      id: '2',
-      name: 'Change Management',
-      code: 'CM',
-      description: 'Controls for managing system changes',
-      sort_order: 2
-    },
-    {
-      id: '3',
-      name: 'Segregation of Duties',
-      code: 'SOD',
-      description: 'Controls to ensure proper separation of responsibilities',
-      sort_order: 3
-    }
-  ]);
-
-  const [unlinkedCategories, setUnlinkedCategories] = useState([
-    {
-      id: '4',
-      name: 'Data Backup',
-      code: 'DB',
-      description: 'Controls for data backup and recovery',
-      sort_order: 4
-    }
-  ]);
 
   const breadcrumbItems = [
     { label: 'Admin', path: '/admin', icon: 'fa-home' },
-    { label: 'Frameworks', path: '/admin/frameworks', icon: 'fa-folder-tree' },
-    { label: `${domain.framework.name}`, path: `/admin/domains?framework=${domain.framework.id}`, icon: 'fa-layer-group' },
-    { label: domain.name, icon: 'fa-tags' }
+    { label: 'All Categories', icon: 'fa-tags' }
   ];
 
   const handleSearch = (query) => {
     setSearchQuery(query);
   };
 
-  const handleEdit = (category) => {
-    setEditingCategory(category);
-    setIsModalOpen(true);
+  const handleCreateCategory = () => {
+    setEditingCategory(null);
+    setIsCreateModalOpen(true);
   };
 
-  const handleDelete = (category) => {
-    if (window.confirm(`Are you sure you want to delete ${category.name}?`)) {
-      setLinkedCategories(prev => prev.filter(c => c.id !== category.id));
-      setUnlinkedCategories(prev => prev.filter(c => c.id !== category.id));
-      console.log('Category deleted:', category);
+  const handleEdit = (category) => {
+    setEditingCategory(category);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleDelete = async (category) => {
+    if (!window.confirm(`Are you sure you want to delete "${category.name}"?`)) return;
+
+    try {
+      setActionLoading(true);
+      await categoryAPI.delete(category.id);
+      alert('Category deleted successfully!');
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting category:', err);
+      alert('Failed to delete category. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleLink = (category) => {
-    setUnlinkedCategories(prev => prev.filter(c => c.id !== category.id));
-    setLinkedCategories(prev => [...prev, category]);
-    console.log('Category linked:', category, 'to domain:', domainId);
+  const handleLinkClick = (category) => {
+    setLinkingCategory(category);
+    setIsLinkModalOpen(true);
   };
 
-  const handleUnlink = (category) => {
-    if (window.confirm(`Are you sure you want to unlink ${category.name}?`)) {
-      setLinkedCategories(prev => prev.filter(c => c.id !== category.id));
-      setUnlinkedCategories(prev => [...prev, category]);
-      console.log('Category unlinked:', category);
+  const handleLinkSubmit = async (domainId) => {
+    if (!linkingCategory) return;
+
+    try {
+      setActionLoading(true);
+      await categoryAPI.linkDomain(linkingCategory.id, domainId);
+      
+      alert(`Category "${linkingCategory.name}" linked successfully!`);
+      setIsLinkModalOpen(false);
+      setLinkingCategory(null);
+      
+      await fetchData();
+    } catch (err) {
+      console.error('Error linking category:', err);
+      const errorMsg = err.response?.data?.error || 'Failed to link category. Please try again.';
+      alert(errorMsg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleViewDomain = (category) => {
+    const domain = allDomains.find(d => d.id === category.domain);
+    if (domain) {
+      setViewingDomain(domain);
+      setIsViewModalOpen(true);
+    } else {
+      alert('Domain not found');
+    }
+  };
+
+  const handleUnlink = async (category) => {
+    if (!window.confirm(`Are you sure you want to unlink "${category.name}"?`)) return;
+
+    try {
+      setActionLoading(true);
+      await categoryAPI.unlinkDomain(category.id);
+      alert(`Category "${category.name}" unlinked successfully!`);
+      await fetchData();
+    } catch (err) {
+      console.error('Error unlinking category:', err);
+      alert('Failed to unlink category. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -108,51 +160,79 @@ const CategoryView = () => {
     navigate(`/admin/subcategories?category=${category.id}`);
   };
 
-  const handleCreateCategory = () => {
-    setEditingCategory(null);
-    setIsModalOpen(true);
-  };
-
   const handleModalClose = () => {
-    setIsModalOpen(false);
+    setIsCreateModalOpen(false);
     setEditingCategory(null);
   };
 
-  const handleModalSubmit = (formData) => {
-    if (editingCategory) {
-      // Update existing category
-      const updateCategory = (categories) => 
-        categories.map(c => c.id === editingCategory.id ? { ...c, ...formData } : c);
-      
-      setLinkedCategories(prev => updateCategory(prev));
-      setUnlinkedCategories(prev => updateCategory(prev));
-      console.log('Category updated:', formData);
-    } else {
-      // Create new category
-      const newCategory = {
-        id: String(linkedCategories.length + unlinkedCategories.length + 1),
-        ...formData
-      };
-      
-      // Add to linked or unlinked based on domain_id
-      if (formData.domain_id) {
-        setLinkedCategories(prev => [...prev, newCategory]);
+  const handleModalSubmit = async (formData) => {
+    try {
+      setActionLoading(true);
+
+      if (editingCategory) {
+        await categoryAPI.update(editingCategory.id, formData);
+        alert('Category updated successfully!');
       } else {
-        setUnlinkedCategories(prev => [...prev, newCategory]);
+        await categoryAPI.create(formData);
+        alert('Category created successfully!');
       }
-      console.log('Category created:', newCategory);
+
+      await fetchData();
+      handleModalClose();
+    } catch (err) {
+      console.error('Error saving category:', err);
+      alert('Failed to save category. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const filteredLinkedCategories = linkedCategories.filter(c =>
+  const currentCategories = activeTab === 'linked' ? linkedCategories : unlinkedCategories;
+  const filteredCategories = currentCategories.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredUnlinkedCategories = unlinkedCategories.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  if (loading) {
+    return (
+      <div className="category-view">
+        <BreadcrumbNav items={breadcrumbItems} />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: '3rem', color: '#0066cc' }}></i>
+          <p style={{ fontSize: '1.1rem', color: '#666' }}>Loading categories...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="category-view">
+        <BreadcrumbNav items={breadcrumbItems} />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <i className="fas fa-exclamation-triangle" style={{ fontSize: '3rem', color: '#dc3545' }}></i>
+          <p style={{ fontSize: '1.1rem', color: '#dc3545', marginBottom: '1rem' }}>{error}</p>
+          <button className="create-btn" onClick={fetchData}>
+            <i className="fas fa-redo"></i> Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="category-view">
@@ -160,15 +240,38 @@ const CategoryView = () => {
 
       <div className="view-header">
         <div className="header-content">
-          <h1 className="view-title">Categories</h1>
-          <p className="view-subtitle">
-            Manage categories for {domain.name}
-          </p>
+          <h1 className="view-title">All Categories</h1>
+          <p className="view-subtitle">Manage all categories and their domain connections</p>
         </div>
-        <button className="create-btn" onClick={handleCreateCategory}>
+        <button 
+          className="create-btn" 
+          onClick={handleCreateCategory}
+          disabled={actionLoading}
+        >
           <i className="fas fa-plus"></i>
           Create Category
         </button>
+      </div>
+
+      <div className="stats-grid">
+        <StatsCard
+          icon="fa-tags"
+          label="Total Categories"
+          value={linkedCategories.length + unlinkedCategories.length}
+          color="teal"
+        />
+        <StatsCard
+          icon="fa-link"
+          label="Linked"
+          value={linkedCategories.length}
+          color="green"
+        />
+        <StatsCard
+          icon="fa-unlink"
+          label="Unlinked"
+          value={unlinkedCategories.length}
+          color="orange"
+        />
       </div>
 
       <SearchBar
@@ -194,66 +297,93 @@ const CategoryView = () => {
         </button>
       </div>
 
-      {activeTab === 'linked' && (
-        <>
-          {filteredLinkedCategories.length > 0 ? (
-            <div className="entities-grid">
-              {filteredLinkedCategories.map(category => (
-                <EntityCard
-                  key={category.id}
-                  entity={category}
-                  type="category"
-                  isLinked={true}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onUnlink={handleUnlink}
-                  onClick={handleCategoryClick}
-                />
-              ))}
+      {filteredCategories.length > 0 ? (
+        <div className="entities-grid">
+          {filteredCategories.map(category => (
+            <div key={category.id}>
+              <EntityCard
+                entity={category}
+                type="category"
+                isLinked={activeTab === 'linked'}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onLink={() => handleLinkClick(category)}
+                onUnlink={handleUnlink}
+                onClick={handleCategoryClick}
+                disabled={actionLoading}
+              />
+              
+              {activeTab === 'linked' && category.domain && (
+                <div style={{
+                  marginTop: '0.5rem',
+                  padding: '0.5rem 0.75rem',
+                  background: '#e0f2fe',
+                  borderRadius: '6px',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>
+                    <i className="fas fa-link" style={{ marginRight: '0.5rem' }}></i>
+                    {allDomains.find(d => d.id === category.domain)?.name || 'Unknown'}
+                  </span>
+                  <button
+                    onClick={() => handleViewDomain(category)}
+                    style={{
+                      padding: '0.25rem 0.75rem',
+                      background: '#0891b2',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600
+                    }}
+                  >
+                    View Domain
+                  </button>
+                </div>
+              )}
             </div>
-          ) : (
-            <EmptyState
-              icon="fa-tags"
-              title="No linked categories found"
-              description="Link existing categories or create new ones"
-            />
-          )}
-        </>
-      )}
-
-      {activeTab === 'unlinked' && (
-        <>
-          {filteredUnlinkedCategories.length > 0 ? (
-            <div className="entities-grid">
-              {filteredUnlinkedCategories.map(category => (
-                <EntityCard
-                  key={category.id}
-                  entity={category}
-                  type="category"
-                  isLinked={false}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onLink={handleLink}
-                  onClick={handleCategoryClick}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon="fa-tags"
-              title="No unlinked categories found"
-              description="All categories are currently linked to domains"
-            />
-          )}
-        </>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon="fa-tags"
+          title="No categories found"
+          description={searchQuery ? "Try adjusting your search criteria" : "Get started by creating your first category"}
+          actionLabel={!searchQuery ? "Create Category" : undefined}
+          onAction={!searchQuery ? handleCreateCategory : undefined}
+        />
       )}
 
       <CreateCategoryModal
-        isOpen={isModalOpen}
+        isOpen={isCreateModalOpen}
         onClose={handleModalClose}
         onSubmit={handleModalSubmit}
         category={editingCategory}
-        domains={domains}
+        domains={allDomains}
+      />
+
+      <LinkDomainModal
+        isOpen={isLinkModalOpen}
+        onClose={() => {
+          setIsLinkModalOpen(false);
+          setLinkingCategory(null);
+        }}
+        onSubmit={handleLinkSubmit}
+        domains={allDomains}
+        categoryName={linkingCategory?.name}
+      />
+
+      <ViewDomainTooltip
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setViewingDomain(null);
+        }}
+        domain={viewingDomain}
       />
     </div>
   );

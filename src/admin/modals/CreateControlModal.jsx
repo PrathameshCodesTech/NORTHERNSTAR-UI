@@ -1,27 +1,72 @@
-import React, { useState } from 'react';
+// src/admin/modals/CreateControlModal.jsx
+import React, { useState, useEffect } from 'react';
 import './CreateFrameworkModal.css';
 
-const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcategories = [] }) => {
+const CreateControlModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  control = null, 
+  subcategories = [],
+  currentSubcategoryId = null 
+}) => {
   const [formData, setFormData] = useState({
-    control_code: control?.control_code || '',
-    title: control?.title || '',
-    description: control?.description || '',
-    objective: control?.objective || '',
-    control_type: control?.control_type || 'PREVENTIVE',
-    frequency: control?.frequency || 'MONTHLY',
-    risk_level: control?.risk_level || 'MEDIUM',
-    subcategory_id: control?.subcategory_id || '',
-    sort_order: control?.sort_order || 1
+    control_code: '',
+    title: '',
+    description: '',
+    objective: '',
+    control_type: 'PREVENTIVE',
+    frequency: 'MONTHLY',
+    risk_level: 'MEDIUM',
+    subcategory: '', // ✅ Changed from subcategory_id to subcategory
+    sort_order: 1
   });
 
   const [errors, setErrors] = useState({});
+
+  // ✅ Reset form when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (control) {
+      // EDIT MODE
+      setFormData({
+        control_code: control.control_code || '',
+        title: control.title || '',
+        description: control.description || '',
+        objective: control.objective || '',
+        control_type: control.control_type || 'PREVENTIVE',
+        frequency: control.frequency || 'MONTHLY',
+        risk_level: control.risk_level || 'MEDIUM',
+        subcategory: control.subcategory || '',
+        sort_order: control.sort_order || 1
+      });
+    } else {
+      // CREATE MODE
+      setFormData({
+        control_code: '',
+        title: '',
+        description: '',
+        objective: '',
+        control_type: 'PREVENTIVE',
+        frequency: 'MONTHLY',
+        risk_level: 'MEDIUM',
+        subcategory: currentSubcategoryId || '', // ✅ Pre-select current subcategory
+        sort_order: 1
+      });
+    }
+
+    setErrors({});
+
+  }, [isOpen, control, currentSubcategoryId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'control_code' ? value.toUpperCase() : value
     }));
+    
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -32,30 +77,60 @@ const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcate
 
   const validate = () => {
     const newErrors = {};
+    
     if (!formData.control_code.trim()) {
       newErrors.control_code = 'Control code is required';
     } else {
-      // Validate format: AC-001, CM-001 (2-4 letters, dash, 3 digits)
       const codePattern = /^[A-Z]{2,4}-\d{3}$/;
       if (!codePattern.test(formData.control_code)) {
         newErrors.control_code = 'Format must be like AC-001, CM-001';
       }
     }
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (!formData.objective.trim()) newErrors.objective = 'Objective is required';
+    
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
+    
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    }
+    
+    if (!formData.objective.trim()) {
+      newErrors.objective = 'Objective is required';
+    }
+    
+    // ✅ NEW: Subcategory is REQUIRED
+    if (!formData.subcategory) {
+      newErrors.subcategory = 'Subcategory is required';
+    }
+    
     return newErrors;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    onSubmit(formData);
-    onClose();
+
+    // ✅ Prepare data for API
+    const submitData = {
+      control_code: formData.control_code.trim(),
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      objective: formData.objective.trim(),
+      control_type: formData.control_type,
+      frequency: formData.frequency,
+      risk_level: formData.risk_level,
+      subcategory: formData.subcategory, // ✅ Always required (UUID)
+      sort_order: parseInt(formData.sort_order, 10) || 1
+    };
+
+    console.log('Submitting control data:', submitData);
+    onSubmit(submitData);
   };
 
   const handleBackdropClick = (e) => {
@@ -80,6 +155,7 @@ const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcate
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
+          {/* CONTROL CODE & SUBCATEGORY */}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">
@@ -95,15 +171,17 @@ const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcate
                 style={{ textTransform: 'uppercase' }}
               />
               {errors.control_code && <span className="error-text">{errors.control_code}</span>}
-              <span className="helper-text">Format: 2-4 letters, dash, 3 digits</span>
+              <small className="helper-text">Format: 2-4 letters, dash, 3 digits</small>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Subcategory (Optional)</label>
+              <label className="form-label">
+                Subcategory <span className="required">*</span>
+              </label>
               <select
-                name="subcategory_id"
-                className="form-input"
-                value={formData.subcategory_id}
+                name="subcategory"
+                className={`form-input ${errors.subcategory ? 'error' : ''}`}
+                value={formData.subcategory}
                 onChange={handleChange}
               >
                 <option value="">-- Select Subcategory --</option>
@@ -113,9 +191,12 @@ const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcate
                   </option>
                 ))}
               </select>
+              {errors.subcategory && <span className="error-text">{errors.subcategory}</span>}
+              <small className="helper-text">Control must belong to a subcategory</small>
             </div>
           </div>
 
+          {/* TITLE */}
           <div className="form-group">
             <label className="form-label">
               Title <span className="required">*</span>
@@ -131,6 +212,7 @@ const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcate
             {errors.title && <span className="error-text">{errors.title}</span>}
           </div>
 
+          {/* DESCRIPTION */}
           <div className="form-group">
             <label className="form-label">
               Description <span className="required">*</span>
@@ -146,6 +228,7 @@ const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcate
             {errors.description && <span className="error-text">{errors.description}</span>}
           </div>
 
+          {/* OBJECTIVE */}
           <div className="form-group">
             <label className="form-label">
               Objective <span className="required">*</span>
@@ -161,6 +244,7 @@ const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcate
             {errors.objective && <span className="error-text">{errors.objective}</span>}
           </div>
 
+          {/* CONTROL TYPE & FREQUENCY */}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">
@@ -198,6 +282,7 @@ const CreateControlModal = ({ isOpen, onClose, onSubmit, control = null, subcate
             </div>
           </div>
 
+          {/* RISK LEVEL & SORT ORDER */}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">

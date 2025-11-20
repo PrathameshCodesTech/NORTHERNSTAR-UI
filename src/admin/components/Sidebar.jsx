@@ -1,3 +1,4 @@
+// src/admin/components/Sidebar.jsx
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import './Sidebar.css';
@@ -15,15 +16,12 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Hamburger Button - Visible on Mobile */}
       <button className="hamburger-btn" onClick={toggleSidebar}>
         <i className="fas fa-bars"></i>
       </button>
 
-      {/* Backdrop - Visible when sidebar is open on mobile */}
       {isOpen && <div className="sidebar-backdrop" onClick={closeSidebar}></div>}
 
-      {/* Sidebar */}
       <aside className={`admin-sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
@@ -33,7 +31,6 @@ const Sidebar = () => {
             <span className="sidebar-brand">AuditSmart</span>
           </div>
           
-          {/* Close Button - Visible on Mobile */}
           <button className="sidebar-close-btn" onClick={closeSidebar}>
             <i className="fas fa-times"></i>
           </button>
@@ -42,36 +39,45 @@ const Sidebar = () => {
         <p className="sidebar-subtitle">Admin Panel</p>
 
         <nav className="sidebar-nav">
+          {/* ✅ RESTORED: Framework Management Section */}
           <div className="nav-section">
             <h3 className="nav-section-title">Framework Management</h3>
+            
             <NavLink to="/admin/frameworks" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-folder-tree"></i>
               <span>Frameworks</span>
             </NavLink>
+            
+            {/* ✅ RESTORED: Global list views */}
             <NavLink to="/admin/domains" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-layer-group"></i>
-              <span>Domains</span>
+              <span>All Domains</span>
             </NavLink>
+            
             <NavLink to="/admin/categories" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-tags"></i>
-              <span>Categories</span>
+              <span>All Categories</span>
             </NavLink>
+            
             <NavLink to="/admin/subcategories" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-sitemap"></i>
-              <span>Subcategories</span>
+              <span>All Subcategories</span>
             </NavLink>
+            
             <NavLink to="/admin/controls" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-shield-halved"></i>
-              <span>Controls</span>
+              <span>All Controls</span>
             </NavLink>
           </div>
 
           <div className="nav-section">
             <h3 className="nav-section-title">Assessment</h3>
+            
             <NavLink to="/admin/questions" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-circle-question"></i>
               <span>Questions</span>
             </NavLink>
+            
             <NavLink to="/admin/evidence" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-file-lines"></i>
               <span>Evidence</span>

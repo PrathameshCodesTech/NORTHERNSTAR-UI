@@ -1,70 +1,56 @@
-import React, { useState } from 'react';
+// src/admin/pages/EvidenceList.jsx
+import React, { useState, useEffect } from 'react';
 import BreadcrumbNav from '../components/BreadcrumbNav';
 import SearchBar from '../components/SearchBar';
 import EmptyState from '../components/EmptyState';
+import StatsCard from '../components/StatsCard';
 import AddEvidenceModal from '../modals/AddEvidenceModal';
+import { evidenceAPI, controlAPI } from '../../services/templateService';
 import './EvidenceList.css';
 
-
 const EvidenceList = () => {
+  const [evidenceList, setEvidenceList] = useState([]);
+  const [controls, setControls] = useState([]);
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvidence, setEditingEvidence] = useState(null);
 
-  // Mock data
-  const [evidenceList, setEvidenceList] = useState([
-    {
-      id: '1',
-      title: 'User Access Request Form',
-      description: 'Documented request form for new user access',
-      evidence_type: 'DOCUMENT',
-      file_format: 'PDF, DOC',
-      is_mandatory: true,
-      sort_order: 1,
-      control: { control_code: 'AC-001', title: 'User Account Creation' }
-    },
-    {
-      id: '2',
-      title: 'Manager Approval Email',
-      description: 'Email approval from manager for access request',
-      evidence_type: 'SCREENSHOT',
-      file_format: 'PNG, JPG',
-      is_mandatory: true,
-      sort_order: 2,
-      control: { control_code: 'AC-001', title: 'User Account Creation' }
-    },
-    {
-      id: '3',
-      title: 'Access Review Report',
-      description: 'Quarterly access review report',
-      evidence_type: 'REPORT',
-      file_format: 'PDF, XLSX',
-      is_mandatory: true,
-      sort_order: 1,
-      control: { control_code: 'AC-002', title: 'User Access Review' }
-    },
-    {
-      id: '4',
-      title: 'Password Policy Document',
-      description: 'Corporate password policy documentation',
-      evidence_type: 'POLICY',
-      file_format: 'PDF',
-      is_mandatory: false,
-      sort_order: 1,
-      control: { control_code: 'AC-004', title: 'Password Management' }
-    },
-    {
-      id: '5',
-      title: 'System Audit Logs',
-      description: 'System access and activity logs',
-      evidence_type: 'LOG_FILE',
-      file_format: 'LOG, TXT, CSV',
-      is_mandatory: true,
-      sort_order: 1,
-      control: { control_code: 'AC-003', title: 'System Monitoring' }
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all evidence requirements
+      const evidenceResponse = await evidenceAPI.getAll();
+      const evidenceArray = Array.isArray(evidenceResponse) 
+        ? evidenceResponse 
+        : evidenceResponse?.results || [];
+      setEvidenceList(evidenceArray);
+
+      // Fetch all controls for dropdown
+      const controlsResponse = await controlAPI.getAll();
+      const controlsArray = Array.isArray(controlsResponse) 
+        ? controlsResponse 
+        : controlsResponse?.results || [];
+      setControls(controlsArray);
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const breadcrumbItems = [
     { label: 'Admin', path: '/admin', icon: 'fa-home' },
@@ -72,6 +58,7 @@ const EvidenceList = () => {
   ];
 
   const typeFilters = [
+    { label: 'All Types', value: '' },
     { label: 'Document', value: 'DOCUMENT' },
     { label: 'Screenshot', value: 'SCREENSHOT' },
     { label: 'Video', value: 'VIDEO' },
@@ -99,10 +86,19 @@ const EvidenceList = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (evidence) => {
-    if (window.confirm('Are you sure you want to delete this evidence requirement?')) {
-      setEvidenceList(prev => prev.filter(ev => ev.id !== evidence.id));
-      console.log('Evidence deleted:', evidence);
+  const handleDelete = async (evidence) => {
+    if (!window.confirm('Are you sure you want to delete this evidence requirement?')) return;
+
+    try {
+      setActionLoading(true);
+      await evidenceAPI.delete(evidence.id);
+      alert('Evidence requirement deleted successfully!');
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting evidence:', err);
+      alert('Failed to delete evidence requirement. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -111,34 +107,80 @@ const EvidenceList = () => {
     setEditingEvidence(null);
   };
 
-  const handleModalSubmit = (formData) => {
-    if (editingEvidence) {
-      // Update existing evidence
-      setEvidenceList(prev => 
-        prev.map(ev => ev.id === editingEvidence.id 
-          ? { ...ev, ...formData } 
-          : ev
-        )
-      );
-      console.log('Evidence updated:', formData);
-    } else {
-      // Create new evidence
-      const newEvidence = {
-        id: String(evidenceList.length + 1),
-        ...formData,
-        control: { control_code: 'GENERAL', title: 'General Evidence' }
-      };
-      setEvidenceList(prev => [...prev, newEvidence]);
-      console.log('Evidence created:', newEvidence);
+  const handleModalSubmit = async (formData) => {
+    try {
+      setActionLoading(true);
+
+      if (editingEvidence) {
+        await evidenceAPI.update(editingEvidence.id, formData);
+        alert('Evidence requirement updated successfully!');
+      } else {
+        await evidenceAPI.create(formData);
+        alert('Evidence requirement created successfully!');
+      }
+
+      await fetchData();
+      handleModalClose();
+    } catch (err) {
+      console.error('Error saving evidence:', err);
+      alert('Failed to save evidence requirement. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const filteredEvidence = evidenceList.filter(ev => {
-    const matchesSearch = ev.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ev.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = ev.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ev.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = !filterType || ev.evidence_type === filterType;
     return matchesSearch && matchesType;
   });
+
+  // Get control details for evidence
+  const getControlForEvidence = (evidence) => {
+    return controls.find(c => c.id === evidence.control) || null;
+  };
+
+  if (loading) {
+    return (
+      <div className="evidence-list">
+        <BreadcrumbNav items={breadcrumbItems} />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: '3rem', color: '#0066cc' }}></i>
+          <p style={{ fontSize: '1.1rem', color: '#666' }}>Loading evidence requirements...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="evidence-list">
+        <BreadcrumbNav items={breadcrumbItems} />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <i className="fas fa-exclamation-triangle" style={{ fontSize: '3rem', color: '#dc3545' }}></i>
+          <p style={{ fontSize: '1.1rem', color: '#dc3545', marginBottom: '1rem' }}>{error}</p>
+          <button className="create-btn" onClick={fetchData}>
+            <i className="fas fa-redo"></i> Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="evidence-list">
@@ -149,10 +191,36 @@ const EvidenceList = () => {
           <h1 className="view-title">Evidence Requirements</h1>
           <p className="view-subtitle">Manage all evidence requirements across controls</p>
         </div>
-        <button className="create-btn" onClick={handleCreateEvidence}>
+        <button 
+          className="create-btn" 
+          onClick={handleCreateEvidence}
+          disabled={actionLoading}
+        >
           <i className="fas fa-plus"></i>
           Add Evidence
         </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="stats-grid">
+        <StatsCard
+          icon="fa-file-lines"
+          label="Total Evidence"
+          value={evidenceList.length}
+          color="teal"
+        />
+        <StatsCard
+          icon="fa-star"
+          label="Mandatory"
+          value={evidenceList.filter(e => e.is_mandatory).length}
+          color="red"
+        />
+        <StatsCard
+          icon="fa-circle"
+          label="Optional"
+          value={evidenceList.filter(e => !e.is_mandatory).length}
+          color="blue"
+        />
       </div>
 
       <SearchBar
@@ -177,45 +245,62 @@ const EvidenceList = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredEvidence.map(evidence => (
-                <tr key={evidence.id}>
-                  <td>
-                    <strong className="evidence-title">{evidence.title}</strong>
-                  </td>
-                  <td>
-                    <p className="evidence-description">{evidence.description}</p>
-                  </td>
-                  <td>
-                    <div className="control-info">
-                      <span className="control-code">{evidence.control.control_code}</span>
-                      <span className="control-title">{evidence.control.title}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="badge type-badge">{evidence.evidence_type}</span>
-                  </td>
-                  <td>
-                    <span className="format-text">{evidence.file_format}</span>
-                  </td>
-                  <td>
-                    {evidence.is_mandatory ? (
-                      <span className="badge mandatory-badge">Mandatory</span>
-                    ) : (
-                      <span className="badge optional-badge">Optional</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button className="icon-btn edit-btn" onClick={() => handleEdit(evidence)} title="Edit">
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button className="icon-btn delete-btn" onClick={() => handleDelete(evidence)} title="Delete">
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredEvidence.map(evidence => {
+                const control = getControlForEvidence(evidence);
+                return (
+                  <tr key={evidence.id}>
+                    <td>
+                      <strong className="evidence-title">{evidence.title}</strong>
+                    </td>
+                    <td>
+                      <p className="evidence-description">{evidence.description}</p>
+                    </td>
+                    <td>
+                      {control ? (
+                        <div className="control-info">
+                          <span className="control-code">{control.control_code}</span>
+                          <span className="control-title">{control.title}</span>
+                        </div>
+                      ) : (
+                        <span style={{ color: '#999' }}>Unknown Control</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className="badge type-badge">{evidence.evidence_type}</span>
+                    </td>
+                    <td>
+                      <span className="format-text">{evidence.file_format || 'Any'}</span>
+                    </td>
+                    <td>
+                      {evidence.is_mandatory ? (
+                        <span className="badge mandatory-badge">Mandatory</span>
+                      ) : (
+                        <span className="badge optional-badge">Optional</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button 
+                          className="icon-btn edit-btn" 
+                          onClick={() => handleEdit(evidence)} 
+                          title="Edit"
+                          disabled={actionLoading}
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button 
+                          className="icon-btn delete-btn" 
+                          onClick={() => handleDelete(evidence)} 
+                          title="Delete"
+                          disabled={actionLoading}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -223,7 +308,11 @@ const EvidenceList = () => {
         <EmptyState
           icon="fa-file-lines"
           title="No evidence requirements found"
-          description="Try adjusting your search criteria"
+          description={searchQuery || filterType 
+            ? "Try adjusting your search or filter criteria" 
+            : "Get started by adding your first evidence requirement"}
+          actionLabel={!searchQuery && !filterType ? "Add Evidence" : undefined}
+          onAction={!searchQuery && !filterType ? handleCreateEvidence : undefined}
         />
       )}
 
@@ -232,6 +321,7 @@ const EvidenceList = () => {
         onClose={handleModalClose}
         onSubmit={handleModalSubmit}
         evidence={editingEvidence}
+        controls={controls}
       />
     </div>
   );

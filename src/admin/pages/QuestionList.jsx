@@ -1,53 +1,56 @@
-import React, { useState } from 'react';
+// src/admin/pages/QuestionList.jsx
+import React, { useState, useEffect } from 'react';
 import BreadcrumbNav from '../components/BreadcrumbNav';
 import SearchBar from '../components/SearchBar';
 import EmptyState from '../components/EmptyState';
+import StatsCard from '../components/StatsCard';
 import AddQuestionModal from '../modals/AddQuestionModal';
+import { questionAPI, controlAPI } from '../../services/templateService';
 import './QuestionList.css';
 
-
 const QuestionList = () => {
+  const [questions, setQuestions] = useState([]);
+  const [controls, setControls] = useState([]);
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
 
-  // Mock data
-  const [questions, setQuestions] = useState([
-    {
-      id: '1',
-      question: 'Is there a documented process for user account creation?',
-      question_type: 'YES_NO',
-      is_mandatory: true,
-      sort_order: 1,
-      control: { control_code: 'AC-001', title: 'User Account Creation' }
-    },
-    {
-      id: '2',
-      question: 'What is the average time to provision access?',
-      question_type: 'NUMERIC',
-      is_mandatory: false,
-      sort_order: 2,
-      control: { control_code: 'AC-001', title: 'User Account Creation' }
-    },
-    {
-      id: '3',
-      question: 'Describe the password reset process',
-      question_type: 'TEXT',
-      is_mandatory: true,
-      sort_order: 1,
-      control: { control_code: 'AC-004', title: 'Password Management' }
-    },
-    {
-      id: '4',
-      question: 'How often are access reviews performed?',
-      question_type: 'MULTIPLE_CHOICE',
-      options: ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annually'],
-      is_mandatory: true,
-      sort_order: 1,
-      control: { control_code: 'AC-002', title: 'User Access Review' }
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all questions
+      const questionsResponse = await questionAPI.getAll();
+      const questionsArray = Array.isArray(questionsResponse) 
+        ? questionsResponse 
+        : questionsResponse?.results || [];
+      setQuestions(questionsArray);
+
+      // Fetch all controls for dropdown
+      const controlsResponse = await controlAPI.getAll();
+      const controlsArray = Array.isArray(controlsResponse) 
+        ? controlsResponse 
+        : controlsResponse?.results || [];
+      setControls(controlsArray);
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const breadcrumbItems = [
     { label: 'Admin', path: '/admin', icon: 'fa-home' },
@@ -55,6 +58,7 @@ const QuestionList = () => {
   ];
 
   const typeFilters = [
+    { label: 'All Types', value: '' },
     { label: 'Yes/No', value: 'YES_NO' },
     { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
     { label: 'Text', value: 'TEXT' },
@@ -80,10 +84,19 @@ const QuestionList = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (question) => {
-    if (window.confirm('Are you sure you want to delete this question?')) {
-      setQuestions(prev => prev.filter(q => q.id !== question.id));
-      console.log('Question deleted:', question);
+  const handleDelete = async (question) => {
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
+
+    try {
+      setActionLoading(true);
+      await questionAPI.delete(question.id);
+      alert('Question deleted successfully!');
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting question:', err);
+      alert('Failed to delete question. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -92,33 +105,79 @@ const QuestionList = () => {
     setEditingQuestion(null);
   };
 
-  const handleModalSubmit = (formData) => {
-    if (editingQuestion) {
-      // Update existing question
-      setQuestions(prev => 
-        prev.map(q => q.id === editingQuestion.id 
-          ? { ...q, ...formData } 
-          : q
-        )
-      );
-      console.log('Question updated:', formData);
-    } else {
-      // Create new question
-      const newQuestion = {
-        id: String(questions.length + 1),
-        ...formData,
-        control: { control_code: 'GENERAL', title: 'General Question' }
-      };
-      setQuestions(prev => [...prev, newQuestion]);
-      console.log('Question created:', newQuestion);
+  const handleModalSubmit = async (formData) => {
+    try {
+      setActionLoading(true);
+
+      if (editingQuestion) {
+        await questionAPI.update(editingQuestion.id, formData);
+        alert('Question updated successfully!');
+      } else {
+        await questionAPI.create(formData);
+        alert('Question created successfully!');
+      }
+
+      await fetchData();
+      handleModalClose();
+    } catch (err) {
+      console.error('Error saving question:', err);
+      alert('Failed to save question. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const filteredQuestions = questions.filter(q => {
-    const matchesSearch = q.question.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = q.question?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = !filterType || q.question_type === filterType;
     return matchesSearch && matchesType;
   });
+
+  // Get control details for a question
+  const getControlForQuestion = (question) => {
+    return controls.find(c => c.id === question.control) || null;
+  };
+
+  if (loading) {
+    return (
+      <div className="question-list">
+        <BreadcrumbNav items={breadcrumbItems} />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: '3rem', color: '#0066cc' }}></i>
+          <p style={{ fontSize: '1.1rem', color: '#666' }}>Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="question-list">
+        <BreadcrumbNav items={breadcrumbItems} />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <i className="fas fa-exclamation-triangle" style={{ fontSize: '3rem', color: '#dc3545' }}></i>
+          <p style={{ fontSize: '1.1rem', color: '#dc3545', marginBottom: '1rem' }}>{error}</p>
+          <button className="create-btn" onClick={fetchData}>
+            <i className="fas fa-redo"></i> Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="question-list">
@@ -129,10 +188,36 @@ const QuestionList = () => {
           <h1 className="view-title">Assessment Questions</h1>
           <p className="view-subtitle">Manage all assessment questions across controls</p>
         </div>
-        <button className="create-btn" onClick={handleCreateQuestion}>
+        <button 
+          className="create-btn" 
+          onClick={handleCreateQuestion}
+          disabled={actionLoading}
+        >
           <i className="fas fa-plus"></i>
           Add Question
         </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="stats-grid">
+        <StatsCard
+          icon="fa-circle-question"
+          label="Total Questions"
+          value={questions.length}
+          color="teal"
+        />
+        <StatsCard
+          icon="fa-star"
+          label="Mandatory"
+          value={questions.filter(q => q.is_mandatory).length}
+          color="red"
+        />
+        <StatsCard
+          icon="fa-circle"
+          label="Optional"
+          value={questions.filter(q => !q.is_mandatory).length}
+          color="blue"
+        />
       </div>
 
       <SearchBar
@@ -155,45 +240,62 @@ const QuestionList = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredQuestions.map(question => (
-                <tr key={question.id}>
-                  <td>
-                    <p className="question-text">{question.question}</p>
-                    {question.options && question.options.length > 0 && (
-                      <div className="question-options">
-                        <span className="options-label">Options: </span>
-                        {question.options.join(', ')}
+              {filteredQuestions.map(question => {
+                const control = getControlForQuestion(question);
+                return (
+                  <tr key={question.id}>
+                    <td>
+                      <p className="question-text">{question.question}</p>
+                      {question.options && question.options.length > 0 && (
+                        <div className="question-options">
+                          <span className="options-label">Options: </span>
+                          {question.options.join(', ')}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {control ? (
+                        <div className="control-info">
+                          <span className="control-code">{control.control_code}</span>
+                          <span className="control-title">{control.title}</span>
+                        </div>
+                      ) : (
+                        <span style={{ color: '#999' }}>Unknown Control</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className="badge type-badge">{question.question_type}</span>
+                    </td>
+                    <td>
+                      {question.is_mandatory ? (
+                        <span className="badge mandatory-badge">Mandatory</span>
+                      ) : (
+                        <span className="badge optional-badge">Optional</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="icon-btn edit-btn" 
+                          onClick={() => handleEdit(question)} 
+                          title="Edit"
+                          disabled={actionLoading}
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button 
+                          className="icon-btn delete-btn" 
+                          onClick={() => handleDelete(question)} 
+                          title="Delete"
+                          disabled={actionLoading}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
                       </div>
-                    )}
-                  </td>
-                  <td>
-                    <div className="control-info">
-                      <span className="control-code">{question.control.control_code}</span>
-                      <span className="control-title">{question.control.title}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="badge type-badge">{question.question_type}</span>
-                  </td>
-                  <td>
-                    {question.is_mandatory ? (
-                      <span className="badge mandatory-badge">Mandatory</span>
-                    ) : (
-                      <span className="badge optional-badge">Optional</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
-                      <button className="icon-btn edit-btn" onClick={() => handleEdit(question)} title="Edit">
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button className="icon-btn delete-btn" onClick={() => handleDelete(question)} title="Delete">
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -201,7 +303,11 @@ const QuestionList = () => {
         <EmptyState
           icon="fa-circle-question"
           title="No questions found"
-          description="Try adjusting your search criteria"
+          description={searchQuery || filterType 
+            ? "Try adjusting your search or filter criteria" 
+            : "Get started by adding your first assessment question"}
+          actionLabel={!searchQuery && !filterType ? "Add Question" : undefined}
+          onAction={!searchQuery && !filterType ? handleCreateQuestion : undefined}
         />
       )}
 
@@ -210,6 +316,7 @@ const QuestionList = () => {
         onClose={handleModalClose}
         onSubmit={handleModalSubmit}
         question={editingQuestion}
+        controls={controls}
       />
     </div>
   );

@@ -1,16 +1,49 @@
-import React, { useState } from 'react';
+// src/admin/modals/CreateSubcategoryModal.jsx
+import React, { useState, useEffect } from 'react';
 import './CreateFrameworkModal.css';
 
-const CreateSubcategoryModal = ({ isOpen, onClose, onSubmit, subcategory = null, categories = [] }) => {
+const CreateSubcategoryModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  subcategory = null, 
+  categories = [],
+  currentCategoryId = null 
+}) => {
   const [formData, setFormData] = useState({
-    name: subcategory?.name || '',
-    code: subcategory?.code || '',
-    description: subcategory?.description || '',
-    category_id: subcategory?.category_id || '',
-    sort_order: subcategory?.sort_order || 1
+    name: '',
+    code: '',
+    description: '',
+    category: '',
+    sort_order: 1
   });
 
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (subcategory) {
+      setFormData({
+        name: subcategory.name || '',
+        code: subcategory.code || '',
+        description: subcategory.description || '',
+        category: subcategory.category || '',
+        sort_order: subcategory.sort_order || 1
+      });
+    } else {
+      setFormData({
+        name: '',
+        code: '',
+        description: '',
+        category: currentCategoryId || '',
+        sort_order: 1
+      });
+    }
+
+    setErrors({});
+
+  }, [isOpen, subcategory, currentCategoryId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,6 +51,7 @@ const CreateSubcategoryModal = ({ isOpen, onClose, onSubmit, subcategory = null,
       ...prev,
       [name]: value
     }));
+    
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -28,21 +62,42 @@ const CreateSubcategoryModal = ({ isOpen, onClose, onSubmit, subcategory = null,
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.code.trim()) newErrors.code = 'Code is required';
-    if (formData.code.length > 10) newErrors.code = 'Code must be 10 characters or less';
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    
+    if (!formData.code.trim()) {
+      newErrors.code = 'Code is required';
+    }
+    
+    if (formData.code.length > 10) {
+      newErrors.code = 'Code must be 10 characters or less';
+    }
+    
     return newErrors;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    onSubmit(formData);
-    onClose();
+
+    const submitData = {
+      name: formData.name.trim(),
+      code: formData.code.trim(),
+      description: formData.description.trim(),
+      category: formData.category || null,
+      sort_order: parseInt(formData.sort_order, 10) || 1
+    };
+
+    console.log('Submitting subcategory data:', submitData);
+    
+    onSubmit(submitData);
   };
 
   const handleBackdropClick = (e) => {
@@ -104,18 +159,23 @@ const CreateSubcategoryModal = ({ isOpen, onClose, onSubmit, subcategory = null,
             <div className="form-group">
               <label className="form-label">Category (Optional)</label>
               <select
-                name="category_id"
+                name="category"
                 className="form-input"
-                value={formData.category_id}
+                value={formData.category}
                 onChange={handleChange}
               >
-                <option value="">-- Select Category --</option>
+                <option value="">-- Leave Unlinked --</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name} ({cat.code})
                   </option>
                 ))}
               </select>
+              <small className="helper-text">
+                {formData.category 
+                  ? 'Subcategory will be linked to selected category' 
+                  : 'Subcategory will be created as orphaned (can be linked later)'}
+              </small>
             </div>
 
             <div className="form-group">

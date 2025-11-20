@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../services/authService';  // ← ADD THIS
 import './Login.css';
+
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',  // ← CHANGED from 'email'
     password: ''
   });
+
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,22 +23,27 @@ const Login = () => {
     setError('');
   };
 
-  const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      if (formData.email && formData.password) {
-        // Successful login - navigate to dashboard or home
-        navigate('/');
-      } else {
-        setError('Please enter valid credentials');
-      }
+    try {
+      // Call real API
+      const data = await authAPI.login(formData.username, formData.password);
+      
+      console.log('Login successful:', data);
+      
+      // Redirect to admin dashboard
+      navigate('/admin/frameworks');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.response?.data?.error || 'Login failed. Please try again.');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
+
 
   return (
     <div className="login-container">
@@ -55,22 +63,23 @@ const Login = () => {
 
         {/* Form Section */}
         <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <div className="form-group">
+            <label className="form-label">Username</label>
             <div className="input-wrapper">
-              <i className="fas fa-envelope input-icon"></i>
+              <i className="fas fa-user input-icon"></i>
               <input
-                type="email"
-                name="email"
+                type="text"
+                name="username"
                 className="form-input"
-                placeholder="Enter your email"
-                value={formData.email}
+                placeholder="Enter your username"
+                value={formData.username}
                 onChange={handleInputChange}
                 autoFocus
                 required
               />
             </div>
           </div>
+
 
           <div className="form-group">
             <label className="form-label">Password</label>

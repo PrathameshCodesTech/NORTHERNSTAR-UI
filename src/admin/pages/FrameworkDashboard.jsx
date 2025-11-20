@@ -1,52 +1,86 @@
-import React, { useState } from 'react';
+// src/admin/pages/FrameworkDashboard.jsx
+import React, { useState, useEffect } from 'react';
 import BreadcrumbNav from '../components/BreadcrumbNav';
 import SearchBar from '../components/SearchBar';
 import FrameworkCard from '../components/FrameworkCard';
 import EmptyState from '../components/EmptyState';
 import StatsCard from '../components/StatsCard';
 import CreateFrameworkModal from '../modals/CreateFrameworkModal';
+import { frameworkAPI } from '../../services/templateService';
 import './FrameworkDashboard.css';
 
-
 const FrameworkDashboard = () => {
-  const [frameworks, setFrameworks] = useState([
-    {
-      id: '1',
-      name: 'SOX',
-      full_name: 'Sarbanes-Oxley Act',
-      version: '2024.1',
-      status: 'ACTIVE',
-      description: 'Financial compliance framework for publicly traded companies',
-      domain_count: 5,
-      control_count: 45
-    },
-    {
-      id: '2',
-      name: 'ISO27001',
-      full_name: 'ISO/IEC 27001',
-      version: '2022.1',
-      status: 'ACTIVE',
-      description: 'Information security management system standard',
-      domain_count: 3,
-      control_count: 28
-    },
-    {
-      id: '3',
-      name: 'NIST',
-      full_name: 'NIST Cybersecurity Framework',
-      version: '1.1',
-      status: 'DRAFT',
-      description: 'Framework for improving critical infrastructure cybersecurity',
-      domain_count: 0,
-      control_count: 0
-    }
-  ]);
-
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+  const [frameworks, setFrameworks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFramework, setEditingFramework] = useState(null);
 
+  // ============================================================================
+  // FETCH FRAMEWORKS ON MOUNT
+  // ============================================================================
+  useEffect(() => {
+    fetchFrameworks();
+  }, []);
+
+  // ============================================================================
+  // HELPER: COUNT CONTROLS IN NESTED STRUCTURE
+  // ============================================================================
+  const countControls = (domains) => {
+    let total = 0;
+    domains.forEach(domain => {
+      domain.categories?.forEach(category => {
+        category.subcategories?.forEach(subcategory => {
+          total += subcategory.controls?.length || 0;
+        });
+      });
+    });
+    return total;
+  };
+
+  const fetchFrameworks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch with deep=true to get nested hierarchy
+      const data = await frameworkAPI.getAll({ deep: 'true' });
+
+      console.log('API Response:', data);
+
+      // Handle paginated or direct array response
+      const frameworksArray = Array.isArray(data)
+        ? data
+        : (data?.results || []);
+
+      // Calculate counts from nested data
+      const frameworksWithCounts = frameworksArray.map(fw => ({
+        ...fw,
+        domain_count: fw.domains?.length || 0,
+        control_count: countControls(fw.domains || [])
+      }));
+
+      console.log('Frameworks with counts:', frameworksWithCounts);
+      setFrameworks(frameworksWithCounts);
+
+    } catch (err) {
+      console.error('Error fetching frameworks:', err);
+      setError('Failed to load frameworks. Please try again.');
+      setFrameworks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // ============================================================================
+  // BREADCRUMB & FILTERS
+  // ============================================================================
   const breadcrumbItems = [
     { label: 'Admin', path: '/admin', icon: 'fa-home' },
     { label: 'Frameworks', icon: 'fa-folder-tree' }
@@ -58,6 +92,9 @@ const FrameworkDashboard = () => {
     { label: 'Deprecated', value: 'DEPRECATED' }
   ];
 
+  // ============================================================================
+  // SEARCH & FILTER HANDLERS
+  // ============================================================================
   const handleSearch = (query) => {
     setSearchQuery(query);
   };
@@ -66,74 +103,153 @@ const FrameworkDashboard = () => {
     setFilterStatus(status);
   };
 
-  const handleEdit = (framework) => {
-    setEditingFramework(framework);
-    setIsModalOpen(true);
-  };
+  // ============================================================================
+  // CRUD HANDLERS
+  // ============================================================================
 
-  const handleDelete = (framework) => {
-    if (window.confirm(`Are you sure you want to delete ${framework.name}?`)) {
-      setFrameworks(prev => prev.filter(fw => fw.id !== framework.id));
-      console.log('Framework deleted:', framework);
-    }
-  };
-
-  const handleClone = (framework) => {
-    const clonedFramework = {
-      ...framework,
-      id: String(frameworks.length + 1),
-      name: `${framework.name} (Copy)`,
-      version: `${framework.version}-copy`,
-      status: 'DRAFT'
-    };
-    setFrameworks(prev => [...prev, clonedFramework]);
-    console.log('Framework cloned:', clonedFramework);
-  };
-
+  // CREATE FRAMEWORK
   const handleCreateFramework = () => {
     setEditingFramework(null);
     setIsModalOpen(true);
   };
 
+  // EDIT FRAMEWORK
+  const handleEdit = (framework) => {
+    setEditingFramework(framework);
+    setIsModalOpen(true);
+  };
+
+  // DELETE FRAMEWORK
+// Replace existing handleDelete with:
+const handleDelete = async (framework) => {
+  if (!window.confirm(`Are you sure you want to delete ${framework.name}?`)) return;
+
+  try {
+    await frameworkAPI.delete(framework.id);
+    console.log('Framework deleted successfully:', framework.name);
+    alert('Framework deleted successfully!');
+    await fetchFrameworks();  // Refresh the frameworks list
+  } catch (err) {
+    console.error('Error deleting framework:', err);
+    alert('Failed to delete framework. Please try again.');
+  }
+};
+
+
+
+// Replace existing handleClone with:
+const handleClone = async (framework) => {
+  const newVersion = prompt('Enter new version for cloned framework:', `${framework.version}-copy`);
+  if (!newVersion) return;
+
+  try {
+    await frameworkAPI.clone(framework.id, { version: newVersion, name: `${framework.name}_COPY` });
+    console.log('Framework cloned successfully');
+    alert('Framework cloned successfully!');
+    await fetchFrameworks(); // Refresh list after clone
+  } catch (err) {
+    console.error('Error cloning framework:', err);
+    alert('Failed to clone framework. Please try again.');
+  }
+};
+
+
+  // ============================================================================
+  // MODAL HANDLERS
+  // ============================================================================
   const handleModalClose = () => {
     setIsModalOpen(false);
     setEditingFramework(null);
   };
 
-  const handleModalSubmit = (formData) => {
-    if (editingFramework) {
-      // Update existing framework
-      setFrameworks(prev => 
-        prev.map(fw => fw.id === editingFramework.id 
-          ? { ...fw, ...formData } 
-          : fw
-        )
-      );
-      console.log('Framework updated:', formData);
-    } else {
-      // Create new framework
-      const newFramework = {
-        id: String(frameworks.length + 1),
-        ...formData,
-        domain_count: 0,
-        control_count: 0
-      };
-      setFrameworks(prev => [...prev, newFramework]);
-      console.log('Framework created:', newFramework);
+  const handleModalSubmit = async (formData) => {
+    try {
+      if (editingFramework) {
+        // UPDATE existing framework
+        await frameworkAPI.update(editingFramework.id, formData);
+        console.log('Framework updated successfully');
+      } else {
+        // CREATE new framework
+        await frameworkAPI.create(formData);
+        console.log('Framework created successfully');
+      }
+      alert('Operation successful!');
+      await fetchFrameworks();  // Refresh frameworks list after changes
+      handleModalClose();
+    } catch (err) {
+      console.error('Error saving framework:', err);
+      alert('Failed to save framework. Please try again.');
     }
   };
 
+
+  // ============================================================================
+  // FILTERED DATA
+  // ============================================================================
   const filteredFrameworks = frameworks.filter(fw => {
     const matchesSearch = fw.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         fw.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+      fw.full_name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = !filterStatus || fw.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const totalDomains = frameworks.reduce((sum, fw) => sum + fw.domain_count, 0);
-  const totalControls = frameworks.reduce((sum, fw) => sum + fw.control_count, 0);
+  // ============================================================================
+  // STATS CALCULATIONS
+  // ============================================================================
+  const totalDomains = frameworks.reduce((sum, fw) => sum + (fw.domain_count || 0), 0);
+  const totalControls = frameworks.reduce((sum, fw) => sum + (fw.control_count || 0), 0);
   const activeFrameworks = frameworks.filter(fw => fw.status === 'ACTIVE').length;
 
+  // ============================================================================
+  // LOADING STATE
+  // ============================================================================
+  if (loading) {
+    return (
+      <div className="framework-dashboard">
+        <BreadcrumbNav items={breadcrumbItems} />
+        <div className="loading-container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: '3rem', color: '#0066cc' }}></i>
+          <p style={{ fontSize: '1.1rem', color: '#666' }}>Loading frameworks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // ERROR STATE
+  // ============================================================================
+  if (error) {
+    return (
+      <div className="framework-dashboard">
+        <BreadcrumbNav items={breadcrumbItems} />
+        <div className="error-container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <i className="fas fa-exclamation-triangle" style={{ fontSize: '3rem', color: '#dc3545' }}></i>
+          <p style={{ fontSize: '1.1rem', color: '#dc3545', marginBottom: '1rem' }}>{error}</p>
+          <button className="create-btn" onClick={fetchFrameworks}>
+            <i className="fas fa-redo"></i> Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // MAIN RENDER
+  // ============================================================================
   return (
     <div className="framework-dashboard">
       <BreadcrumbNav items={breadcrumbItems} />
@@ -150,29 +266,29 @@ const FrameworkDashboard = () => {
       </div>
 
       <div className="stats-grid">
-        <StatsCard 
-          icon="fa-folder-tree" 
-          label="Total Frameworks" 
-          value={frameworks.length} 
-          color="teal" 
+        <StatsCard
+          icon="fa-folder-tree"
+          label="Total Frameworks"
+          value={frameworks.length}
+          color="teal"
         />
-        <StatsCard 
-          icon="fa-check-circle" 
-          label="Active Frameworks" 
-          value={activeFrameworks} 
-          color="green" 
+        <StatsCard
+          icon="fa-check-circle"
+          label="Active Frameworks"
+          value={activeFrameworks}
+          color="green"
         />
-        <StatsCard 
-          icon="fa-layer-group" 
-          label="Total Domains" 
-          value={totalDomains} 
-          color="blue" 
+        <StatsCard
+          icon="fa-layer-group"
+          label="Total Domains"
+          value={totalDomains}
+          color="blue"
         />
-        <StatsCard 
-          icon="fa-shield-halved" 
-          label="Total Controls" 
-          value={totalControls} 
-          color="purple" 
+        <StatsCard
+          icon="fa-shield-halved"
+          label="Total Controls"
+          value={totalControls}
+          color="purple"
         />
       </div>
 

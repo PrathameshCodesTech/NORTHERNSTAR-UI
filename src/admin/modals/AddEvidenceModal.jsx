@@ -1,24 +1,71 @@
-import React, { useState } from 'react';
+// src/admin/modals/AddEvidenceModal.jsx
+import React, { useState, useEffect } from 'react';
 import './CreateFrameworkModal.css';
 
-const AddEvidenceModal = ({ isOpen, onClose, onSubmit, evidence = null, controlCode = '' }) => {
+const AddEvidenceModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  evidence = null,
+  controls = [],
+  currentControlId = null 
+}) => {
   const [formData, setFormData] = useState({
-    title: evidence?.title || '',
-    description: evidence?.description || '',
-    evidence_type: evidence?.evidence_type || 'DOCUMENT',
-    file_format: evidence?.file_format || '',
-    is_mandatory: evidence?.is_mandatory !== undefined ? evidence.is_mandatory : true,
-    sort_order: evidence?.sort_order || 1
+    title: '',
+    description: '',
+    evidence_type: 'DOCUMENT',
+    file_format: '',
+    is_mandatory: true,
+    control: '', // ✅ Control is REQUIRED
+    sort_order: 1
   });
 
   const [errors, setErrors] = useState({});
 
+  // ============================================================================
+  // RESET FORM WHEN MODAL OPENS
+  // ============================================================================
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (evidence) {
+      // EDIT MODE
+      setFormData({
+        title: evidence.title || '',
+        description: evidence.description || '',
+        evidence_type: evidence.evidence_type || 'DOCUMENT',
+        file_format: evidence.file_format || '',
+        is_mandatory: evidence.is_mandatory !== undefined ? evidence.is_mandatory : true,
+        control: evidence.control || '',
+        sort_order: evidence.sort_order || 1
+      });
+    } else {
+      // CREATE MODE
+      setFormData({
+        title: '',
+        description: '',
+        evidence_type: 'DOCUMENT',
+        file_format: '',
+        is_mandatory: true,
+        control: currentControlId || '', // Pre-select if coming from control detail
+        sort_order: 1
+      });
+    }
+
+    setErrors({});
+
+  }, [isOpen, evidence, currentControlId]);
+
+  // ============================================================================
+  // FORM HANDLERS
+  // ============================================================================
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -27,22 +74,52 @@ const AddEvidenceModal = ({ isOpen, onClose, onSubmit, evidence = null, controlC
     }
   };
 
+  // ============================================================================
+  // VALIDATION
+  // ============================================================================
   const validate = () => {
     const newErrors = {};
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
+    
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    }
+    
+    if (!formData.control) {
+      newErrors.control = 'Control is required';
+    }
+    
     return newErrors;
   };
 
+  // ============================================================================
+  // SUBMIT
+  // ============================================================================
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    onSubmit(formData);
-    onClose();
+
+    // ✅ Prepare data for API
+    const submitData = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      evidence_type: formData.evidence_type,
+      file_format: formData.file_format.trim(),
+      is_mandatory: formData.is_mandatory,
+      control: formData.control, // UUID
+      sort_order: parseInt(formData.sort_order, 10) || 1
+    };
+
+    console.log('Submitting evidence data:', submitData);
+    onSubmit(submitData);
   };
 
   const handleBackdropClick = (e) => {
@@ -52,6 +129,9 @@ const AddEvidenceModal = ({ isOpen, onClose, onSubmit, evidence = null, controlC
   };
 
   if (!isOpen) return null;
+
+  // Get selected control info for display
+  const selectedControl = controls.find(c => c.id === formData.control);
 
   return (
     <div className="modal-backdrop" onClick={handleBackdropClick}>
@@ -67,13 +147,33 @@ const AddEvidenceModal = ({ isOpen, onClose, onSubmit, evidence = null, controlC
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
-          {controlCode && (
-            <div className="info-banner">
-              <i className="fas fa-shield-halved"></i>
-              <span>Adding evidence to control: <strong>{controlCode}</strong></span>
-            </div>
-          )}
+          {/* Control Selection */}
+          <div className="form-group">
+            <label className="form-label">
+              Control <span className="required">*</span>
+            </label>
+            <select
+              name="control"
+              className={`form-input ${errors.control ? 'error' : ''}`}
+              value={formData.control}
+              onChange={handleChange}
+            >
+              <option value="">-- Select Control --</option>
+              {controls.map(control => (
+                <option key={control.id} value={control.id}>
+                  {control.control_code} - {control.title}
+                </option>
+              ))}
+            </select>
+            {errors.control && <span className="error-text">{errors.control}</span>}
+            {selectedControl && (
+              <small className="helper-text">
+                Selected: {selectedControl.control_code} - {selectedControl.title}
+              </small>
+            )}
+          </div>
 
+          {/* Title */}
           <div className="form-group">
             <label className="form-label">
               Title <span className="required">*</span>
@@ -89,6 +189,7 @@ const AddEvidenceModal = ({ isOpen, onClose, onSubmit, evidence = null, controlC
             {errors.title && <span className="error-text">{errors.title}</span>}
           </div>
 
+          {/* Description */}
           <div className="form-group">
             <label className="form-label">
               Description <span className="required">*</span>
@@ -104,6 +205,7 @@ const AddEvidenceModal = ({ isOpen, onClose, onSubmit, evidence = null, controlC
             {errors.description && <span className="error-text">{errors.description}</span>}
           </div>
 
+          {/* Evidence Type & Sort Order */}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">
@@ -138,6 +240,7 @@ const AddEvidenceModal = ({ isOpen, onClose, onSubmit, evidence = null, controlC
             </div>
           </div>
 
+          {/* File Format */}
           <div className="form-group">
             <label className="form-label">Accepted File Formats</label>
             <input
@@ -148,9 +251,10 @@ const AddEvidenceModal = ({ isOpen, onClose, onSubmit, evidence = null, controlC
               value={formData.file_format}
               onChange={handleChange}
             />
-            <span className="helper-text">Comma-separated list of file formats</span>
+            <small className="helper-text">Comma-separated list of file formats (optional)</small>
           </div>
 
+          {/* Mandatory Checkbox */}
           <div className="form-group">
             <label className="checkbox-label">
               <input

@@ -1,28 +1,82 @@
-import React, { useState } from 'react';
+// src/admin/modals/AddQuestionModal.jsx
+import React, { useState, useEffect } from 'react';
 import './CreateFrameworkModal.css';
 
-const AddQuestionModal = ({ isOpen, onClose, onSubmit, question = null, controlCode = '' }) => {
+const AddQuestionModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  question = null,
+  controls = [],
+  currentControlId = null 
+}) => {
   const [formData, setFormData] = useState({
-    question: question?.question || '',
-    question_type: question?.question_type || 'YES_NO',
-    options: question?.options || [],
-    is_mandatory: question?.is_mandatory !== undefined ? question.is_mandatory : true,
-    sort_order: question?.sort_order || 1
+    question: '',
+    question_type: 'YES_NO',
+    options: [],
+    is_mandatory: true,
+    control: '', // ✅ Control is REQUIRED
+    sort_order: 1
   });
 
   const [optionInput, setOptionInput] = useState('');
   const [errors, setErrors] = useState({});
 
+  // ============================================================================
+  // RESET FORM WHEN MODAL OPENS
+  // ============================================================================
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (question) {
+      // EDIT MODE
+      setFormData({
+        question: question.question || '',
+        question_type: question.question_type || 'YES_NO',
+        options: question.options || [],
+        is_mandatory: question.is_mandatory !== undefined ? question.is_mandatory : true,
+        control: question.control || '',
+        sort_order: question.sort_order || 1
+      });
+    } else {
+      // CREATE MODE
+      setFormData({
+        question: '',
+        question_type: 'YES_NO',
+        options: [],
+        is_mandatory: true,
+        control: currentControlId || '', // Pre-select if coming from control detail
+        sort_order: 1
+      });
+    }
+
+    setOptionInput('');
+    setErrors({});
+
+  }, [isOpen, question, currentControlId]);
+
+  // ============================================================================
+  // FORM HANDLERS
+  // ============================================================================
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
+      }));
+    }
+
+    // Clear options if switching away from MULTIPLE_CHOICE
+    if (name === 'question_type' && value !== 'MULTIPLE_CHOICE') {
+      setFormData(prev => ({
+        ...prev,
+        options: []
       }));
     }
   };
@@ -44,24 +98,51 @@ const AddQuestionModal = ({ isOpen, onClose, onSubmit, question = null, controlC
     }));
   };
 
+  // ============================================================================
+  // VALIDATION
+  // ============================================================================
   const validate = () => {
     const newErrors = {};
-    if (!formData.question.trim()) newErrors.question = 'Question is required';
-    if (formData.question_type === 'MULTIPLE_CHOICE' && formData.options.length === 0) {
-      newErrors.options = 'Add at least one option for multiple choice';
+    
+    if (!formData.question.trim()) {
+      newErrors.question = 'Question is required';
     }
+    
+    if (!formData.control) {
+      newErrors.control = 'Control is required';
+    }
+    
+    if (formData.question_type === 'MULTIPLE_CHOICE' && formData.options.length === 0) {
+      newErrors.options = 'Add at least one option for multiple choice questions';
+    }
+    
     return newErrors;
   };
 
+  // ============================================================================
+  // SUBMIT
+  // ============================================================================
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    onSubmit(formData);
-    onClose();
+
+    // ✅ Prepare data for API
+    const submitData = {
+      question: formData.question.trim(),
+      question_type: formData.question_type,
+      options: formData.question_type === 'MULTIPLE_CHOICE' ? formData.options : [],
+      is_mandatory: formData.is_mandatory,
+      control: formData.control, // UUID
+      sort_order: parseInt(formData.sort_order, 10) || 1
+    };
+
+    console.log('Submitting question data:', submitData);
+    onSubmit(submitData);
   };
 
   const handleBackdropClick = (e) => {
@@ -71,6 +152,9 @@ const AddQuestionModal = ({ isOpen, onClose, onSubmit, question = null, controlC
   };
 
   if (!isOpen) return null;
+
+  // Get selected control info for display
+  const selectedControl = controls.find(c => c.id === formData.control);
 
   return (
     <div className="modal-backdrop" onClick={handleBackdropClick}>
@@ -86,13 +170,33 @@ const AddQuestionModal = ({ isOpen, onClose, onSubmit, question = null, controlC
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
-          {controlCode && (
-            <div className="info-banner">
-              <i className="fas fa-shield-halved"></i>
-              <span>Adding question to control: <strong>{controlCode}</strong></span>
-            </div>
-          )}
+          {/* Control Selection */}
+          <div className="form-group">
+            <label className="form-label">
+              Control <span className="required">*</span>
+            </label>
+            <select
+              name="control"
+              className={`form-input ${errors.control ? 'error' : ''}`}
+              value={formData.control}
+              onChange={handleChange}
+            >
+              <option value="">-- Select Control --</option>
+              {controls.map(control => (
+                <option key={control.id} value={control.id}>
+                  {control.control_code} - {control.title}
+                </option>
+              ))}
+            </select>
+            {errors.control && <span className="error-text">{errors.control}</span>}
+            {selectedControl && (
+              <small className="helper-text">
+                Selected: {selectedControl.control_code} - {selectedControl.title}
+              </small>
+            )}
+          </div>
 
+          {/* Question Text */}
           <div className="form-group">
             <label className="form-label">
               Question <span className="required">*</span>
@@ -108,6 +212,7 @@ const AddQuestionModal = ({ isOpen, onClose, onSubmit, question = null, controlC
             {errors.question && <span className="error-text">{errors.question}</span>}
           </div>
 
+          {/* Question Type & Sort Order */}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">
@@ -140,6 +245,7 @@ const AddQuestionModal = ({ isOpen, onClose, onSubmit, question = null, controlC
             </div>
           </div>
 
+          {/* Multiple Choice Options */}
           {formData.question_type === 'MULTIPLE_CHOICE' && (
             <div className="form-group">
               <label className="form-label">
@@ -189,6 +295,7 @@ const AddQuestionModal = ({ isOpen, onClose, onSubmit, question = null, controlC
             </div>
           )}
 
+          {/* Mandatory Checkbox */}
           <div className="form-group">
             <label className="checkbox-label">
               <input
