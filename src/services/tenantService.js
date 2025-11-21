@@ -1,7 +1,23 @@
 // src/services/tenantService.js
-import api from './api';
+import axios from 'axios';
 
-const TENANT_BASE = '/admin';
+// ============================================================================
+// V2 API CONFIGURATION (for Tenant Management only)
+// ============================================================================
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const TENANT_BASE = `${API_BASE_URL}/api/v2/admin`;
+
+// ✅ FIXED: Changed 'token' to 'accessToken'
+const getTenantAPI = () => {
+  const token = localStorage.getItem('accessToken'); // ✅ Now matches login!
+  return axios.create({
+    baseURL: TENANT_BASE,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+  });
+};
 
 // ============================================================================
 // SUBSCRIPTION PLAN API
@@ -9,27 +25,32 @@ const TENANT_BASE = '/admin';
 
 export const subscriptionPlanAPI = {
   getAll: async () => {
-    const response = await api.get(`${TENANT_BASE}/subscription-plans/`);
+    const api = getTenantAPI();
+    const response = await api.get('/subscription-plans/');
     return response.data;
   },
 
   getById: async (id) => {
-    const response = await api.get(`${TENANT_BASE}/subscription-plans/${id}/`);
+    const api = getTenantAPI();
+    const response = await api.get(`/subscription-plans/${id}/`);
     return response.data;
   },
 
   create: async (data) => {
-    const response = await api.post(`${TENANT_BASE}/subscription-plans/`, data);
+    const api = getTenantAPI();
+    const response = await api.post('/subscription-plans/', data);
     return response.data;
   },
 
   update: async (id, data) => {
-    const response = await api.patch(`${TENANT_BASE}/subscription-plans/${id}/`, data);
+    const api = getTenantAPI();
+    const response = await api.patch(`/subscription-plans/${id}/`, data);
     return response.data;
   },
 
   delete: async (id) => {
-    const response = await api.delete(`${TENANT_BASE}/subscription-plans/${id}/`);
+    const api = getTenantAPI();
+    const response = await api.delete(`/subscription-plans/${id}/`);
     return response.data;
   },
 };
@@ -40,63 +61,75 @@ export const subscriptionPlanAPI = {
 
 export const tenantAPI = {
   getAll: async (params = {}) => {
-    const response = await api.get(`${TENANT_BASE}/tenants/`, { params });
+    const api = getTenantAPI();
+    const response = await api.get('/tenants/', { params });
     return response.data;
   },
 
   getBySlug: async (slug) => {
-    const response = await api.get(`${TENANT_BASE}/tenants/${slug}/`);
+    const api = getTenantAPI();
+    const response = await api.get(`/tenants/${slug}/`);
     return response.data;
   },
 
   create: async (data) => {
-    const response = await api.post(`${TENANT_BASE}/tenants/`, data);
+    const api = getTenantAPI();
+    const response = await api.post('/tenants/', data);
     return response.data;
   },
 
   update: async (slug, data) => {
-    const response = await api.patch(`${TENANT_BASE}/tenants/${slug}/`, data);
+    const api = getTenantAPI();
+    const response = await api.patch(`/tenants/${slug}/`, data);
     return response.data;
   },
 
   delete: async (slug) => {
-    const response = await api.delete(`${TENANT_BASE}/tenants/${slug}/`);
+    const api = getTenantAPI();
+    const response = await api.delete(`/tenants/${slug}/`);
     return response.data;
   },
 
   // Custom actions
   activate: async (slug, data) => {
-    const response = await api.post(`${TENANT_BASE}/tenants/${slug}/activate/`, data);
+    const api = getTenantAPI();
+    const response = await api.post(`/tenants/${slug}/activate/`, data);
     return response.data;
   },
 
   deletePending: async (slug) => {
-    const response = await api.delete(`${TENANT_BASE}/tenants/${slug}/delete_pending/`);
+    const api = getTenantAPI();
+    const response = await api.delete(`/tenants/${slug}/delete_pending/`);
     return response.data;
   },
 
   subscribe: async (slug, data) => {
-    const response = await api.post(`${TENANT_BASE}/tenants/${slug}/subscribe/`, data);
+    const api = getTenantAPI();
+    const response = await api.post(`/tenants/${slug}/subscribe/`, data);
     return response.data;
   },
 
   suspend: async (slug) => {
-    const response = await api.post(`${TENANT_BASE}/tenants/${slug}/suspend/`);
+    const api = getTenantAPI();
+    const response = await api.post(`/tenants/${slug}/suspend/`);
     return response.data;
   },
 
   reactivate: async (slug) => {
-    const response = await api.post(`${TENANT_BASE}/tenants/${slug}/reactivate/`);
+    const api = getTenantAPI();
+    const response = await api.post(`/tenants/${slug}/reactivate/`);
     return response.data;
   },
 
   getUsage: async (slug) => {
-    const response = await api.get(`${TENANT_BASE}/tenants/${slug}/usage/`);
+    const api = getTenantAPI();
+    const response = await api.get(`/tenants/${slug}/usage/`);
     return response.data;
   },
 
   getFrameworks: async (slug) => {
-    const response = await api.get(`${TENANT_BASE}/tenants/${slug}/frameworks/`);
+    const api = getTenantAPI();
+    const response = await api.get(`/tenants/${slug}/frameworks/`);
     return response.data;
   },
 };
@@ -107,12 +140,14 @@ export const tenantAPI = {
 
 export const frameworkSubscriptionAPI = {
   getAll: async (params = {}) => {
-    const response = await api.get(`${TENANT_BASE}/framework-subscriptions/`, { params });
+    const api = getTenantAPI();
+    const response = await api.get('/framework-subscriptions/', { params });
     return response.data;
   },
 
   getById: async (id) => {
-    const response = await api.get(`${TENANT_BASE}/framework-subscriptions/${id}/`);
+    const api = getTenantAPI();
+    const response = await api.get(`/framework-subscriptions/${id}/`);
     return response.data;
   },
 };
@@ -123,17 +158,20 @@ export const frameworkSubscriptionAPI = {
 
 export const billingAPI = {
   getAll: async (params = {}) => {
-    const response = await api.get(`${TENANT_BASE}/billing-history/`, { params });
+    const api = getTenantAPI();
+    const response = await api.get('/billing-history/', { params });
     return response.data;
   },
 
   getById: async (id) => {
-    const response = await api.get(`${TENANT_BASE}/billing-history/${id}/`);
+    const api = getTenantAPI();
+    const response = await api.get(`/billing-history/${id}/`);
     return response.data;
   },
 
   getPendingPayments: async () => {
-    const response = await api.get(`${TENANT_BASE}/billing-history/pending_payments/`);
+    const api = getTenantAPI();
+    const response = await api.get('/billing-history/pending_payments/');
     return response.data;
   },
 };
@@ -144,17 +182,20 @@ export const billingAPI = {
 
 export const usageLogAPI = {
   getAll: async (params = {}) => {
-    const response = await api.get(`${TENANT_BASE}/usage-logs/`, { params });
+    const api = getTenantAPI();
+    const response = await api.get('/usage-logs/', { params });
     return response.data;
   },
 
   getById: async (id) => {
-    const response = await api.get(`${TENANT_BASE}/usage-logs/${id}/`);
+    const api = getTenantAPI();
+    const response = await api.get(`/usage-logs/${id}/`);
     return response.data;
   },
 
   getSummary: async () => {
-    const response = await api.get(`${TENANT_BASE}/usage-logs/summary/`);
+    const api = getTenantAPI();
+    const response = await api.get('/usage-logs/summary/');
     return response.data;
   },
 };
@@ -165,22 +206,26 @@ export const usageLogAPI = {
 
 export const auditLogAPI = {
   getAll: async (params = {}) => {
-    const response = await api.get(`${TENANT_BASE}/audit-logs/`, { params });
+    const api = getTenantAPI();
+    const response = await api.get('/audit-logs/', { params });
     return response.data;
   },
 
   getById: async (id) => {
-    const response = await api.get(`${TENANT_BASE}/audit-logs/${id}/`);
+    const api = getTenantAPI();
+    const response = await api.get(`/audit-logs/${id}/`);
     return response.data;
   },
 
   getByAdmin: async () => {
-    const response = await api.get(`${TENANT_BASE}/audit-logs/by_admin/`);
+    const api = getTenantAPI();
+    const response = await api.get('/audit-logs/by_admin/');
     return response.data;
   },
 
   getRecent: async () => {
-    const response = await api.get(`${TENANT_BASE}/audit-logs/recent/`);
+    const api = getTenantAPI();
+    const response = await api.get('/audit-logs/recent/');
     return response.data;
   },
 };

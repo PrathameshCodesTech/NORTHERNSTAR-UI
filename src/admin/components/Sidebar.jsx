@@ -39,7 +39,7 @@ const Sidebar = () => {
         <p className="sidebar-subtitle">Admin Panel</p>
 
         <nav className="sidebar-nav">
-          {/* ✅ RESTORED: Framework Management Section */}
+          {/* Framework Management Section */}
           <div className="nav-section">
             <h3 className="nav-section-title">Framework Management</h3>
             
@@ -48,7 +48,6 @@ const Sidebar = () => {
               <span>Frameworks</span>
             </NavLink>
             
-            {/* ✅ RESTORED: Global list views */}
             <NavLink to="/admin/domains" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-layer-group"></i>
               <span>All Domains</span>
@@ -70,6 +69,7 @@ const Sidebar = () => {
             </NavLink>
           </div>
 
+          {/* Assessment Section */}
           <div className="nav-section">
             <h3 className="nav-section-title">Assessment</h3>
             
@@ -81,6 +81,36 @@ const Sidebar = () => {
             <NavLink to="/admin/evidence" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-file-lines"></i>
               <span>Evidence</span>
+            </NavLink>
+          </div>
+
+          {/* ✅ NEW: Tenant Management Section */}
+          <div className="nav-section">
+            <h3 className="nav-section-title">Tenant Management</h3>
+            
+            <NavLink to="/admin/tenants" className="nav-link" onClick={closeSidebar}>
+              <i className="fas fa-building"></i>
+              <span>Tenants</span>
+            </NavLink>
+            
+            <NavLink to="/admin/subscription-plans" className="nav-link" onClick={closeSidebar}>
+              <i className="fas fa-crown"></i>
+              <span>Subscription Plans</span>
+            </NavLink>
+            
+            <NavLink to="/admin/billing" className="nav-link" onClick={closeSidebar}>
+              <i className="fas fa-file-invoice-dollar"></i>
+              <span>Billing History</span>
+            </NavLink>
+            
+            <NavLink to="/admin/audit-logs" className="nav-link" onClick={closeSidebar}>
+              <i className="fas fa-clock-rotate-left"></i>
+              <span>Audit Logs</span>
+            </NavLink>
+            
+            <NavLink to="/admin/usage-analytics" className="nav-link" onClick={closeSidebar}>
+              <i className="fas fa-chart-line"></i>
+              <span>Usage Analytics</span>
             </NavLink>
           </div>
         </nav>

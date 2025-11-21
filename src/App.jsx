@@ -14,15 +14,23 @@ import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
-// Admin Components
+// Admin Components - Framework Management
 import AdminLayout from './admin/components/AdminLayout';
 import FrameworkDashboard from './admin/pages/FrameworkDashboard';
-import DomainView from './admin/pages/DomainView'; // ✅ Handles both cases
+import DomainView from './admin/pages/DomainView';
 import CategoryView from './admin/pages/CategoryView';
 import SubcategoryView from './admin/pages/SubcategoryView';
 import ControlList from './admin/pages/ControlList';
 import QuestionList from './admin/pages/QuestionList';
 import EvidenceList from './admin/pages/EvidenceList';
+
+// Admin Components - Tenant Management
+import TenantsDashboard from './admin/tenant-management/pages/TenantsDashboard';
+import TenantDetailView from './admin/tenant-management/pages/TenantDetailView';
+import SubscriptionPlansList from './admin/tenant-management/pages/SubscriptionPlansList';
+import BillingHistory from './admin/tenant-management/pages/BillingHistory';
+import AuditLogs from './admin/tenant-management/pages/AuditLogs';
+import UsageAnalytics from './admin/tenant-management/pages/UsageAnalytics';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -53,17 +61,23 @@ function App() {
             <AdminLayout />
           </ProtectedRoute>
         }>
+          {/* Framework Management Routes */}
           <Route index element={<FrameworkDashboard />} />
           <Route path="frameworks" element={<FrameworkDashboard />} />
-          
-          {/* ✅ SIMPLE: One component handles both global + framework-specific */}
           <Route path="domains" element={<DomainView />} />
-          
           <Route path="categories" element={<CategoryView />} />
           <Route path="subcategories" element={<SubcategoryView />} />
           <Route path="controls" element={<ControlList />} />
           <Route path="questions" element={<QuestionList />} />
           <Route path="evidence" element={<EvidenceList />} />
+
+          {/* Tenant Management Routes */}
+          <Route path="tenants" element={<TenantsDashboard />} />
+          <Route path="tenants/:id" element={<TenantDetailView />} />
+          <Route path="subscription-plans" element={<SubscriptionPlansList />} />
+          <Route path="billing" element={<BillingHistory />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
+          <Route path="usage-analytics" element={<UsageAnalytics />} />
         </Route>
 
       </Routes>
