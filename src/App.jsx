@@ -11,6 +11,8 @@ import Sync from './pages/Sync';
 import Overview from './pages/Overview';
 import TeamSetup from './pages/TeamSetup';
 import Pricing from './pages/Pricing';
+import FrameworkLibrary from './pages/FrameworkLibrary';
+import Checkout from './pages/Checkout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
@@ -31,6 +33,22 @@ import SubscriptionPlansList from './admin/tenant-management/pages/SubscriptionP
 import BillingHistory from './admin/tenant-management/pages/BillingHistory';
 import AuditLogs from './admin/tenant-management/pages/AuditLogs';
 import UsageAnalytics from './admin/tenant-management/pages/UsageAnalytics';
+
+// Tenant User Components
+import TenantLayout from './tenant/layouts/TenantLayout';
+import TenantDashboard from './tenant/dashboard/TenantDashboard';
+import MyFrameworks from './tenant/frameworks/MyFrameworks';
+import FrameworkDetail from './tenant/frameworks/FrameworkDetail';
+import MyAssignments from './tenant/compliance/MyAssignments';
+import MyAssessments from './tenant/compliance/MyAssessments';
+import PendingApprovals from './tenant/compliance/PendingApprovals';
+import EvidenceManagement from './tenant/compliance/EvidenceManagement';
+import ComplianceReports from './tenant/reports/ComplianceReports';
+import AuditTrail from './tenant/reports/AuditTrail';
+import UserManagement from './tenant/settings/UserManagement';
+import SubscriptionSettings from './tenant/settings/SubscriptionSettings';
+import FrameworkSubscriptions from './tenant/settings/FrameworkSubscriptions';
+import TeamSettings from './tenant/settings/TeamSettings';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -54,6 +72,39 @@ function App() {
         {/* Auth Routes without Layout (Full Screen) */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+
+        {/* User Onboarding Flow (After Signup) - No Layout */}
+        <Route path="/select-plan" element={<Pricing />} />
+        <Route path="/frameworks" element={<FrameworkLibrary />} />
+        <Route path="/checkout" element={<Checkout />} />
+
+        {/* Tenant User Routes - COMPLETE SYSTEM */}
+        <Route path="/app/*" element={
+          <ProtectedRoute>
+            <TenantLayout />
+          </ProtectedRoute>
+        }>
+          {/* Dashboard & Frameworks */}
+          <Route path="dashboard" element={<TenantDashboard />} />
+          <Route path="frameworks" element={<MyFrameworks />} />
+          <Route path="frameworks/:id" element={<FrameworkDetail />} />
+
+          {/* Compliance Work */}
+          <Route path="assignments" element={<MyAssignments />} />
+          <Route path="assessments" element={<MyAssessments />} />
+          <Route path="approvals" element={<PendingApprovals />} />
+          <Route path="evidence" element={<EvidenceManagement />} />
+
+          {/* Reports */}
+          <Route path="reports" element={<ComplianceReports />} />
+          <Route path="audit-trail" element={<AuditTrail />} />
+
+          {/* Settings (TENANT_ADMIN only) */}
+          <Route path="settings/users" element={<UserManagement />} />
+          <Route path="settings/subscription" element={<SubscriptionSettings />} />
+          <Route path="settings/frameworks" element={<FrameworkSubscriptions />} />
+          <Route path="settings/team" element={<TeamSettings />} />
+        </Route>
 
         {/* Admin Routes with AdminLayout (Sidebar + Content) - PROTECTED */}
         <Route path="/admin" element={
