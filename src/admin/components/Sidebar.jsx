@@ -30,7 +30,7 @@ const Sidebar = () => {
             </div>
             <span className="sidebar-brand">AuditSmart</span>
           </div>
-          
+
           <button className="sidebar-close-btn" onClick={closeSidebar}>
             <i className="fas fa-times"></i>
           </button>
@@ -42,27 +42,27 @@ const Sidebar = () => {
           {/* Framework Management Section */}
           <div className="nav-section">
             <h3 className="nav-section-title">Framework Management</h3>
-            
+
             <NavLink to="/admin/frameworks" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-folder-tree"></i>
               <span>Frameworks</span>
             </NavLink>
-            
+
             <NavLink to="/admin/domains" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-layer-group"></i>
               <span>All Domains</span>
             </NavLink>
-            
+
             <NavLink to="/admin/categories" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-tags"></i>
               <span>All Categories</span>
             </NavLink>
-            
+
             <NavLink to="/admin/subcategories" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-sitemap"></i>
               <span>All Subcategories</span>
             </NavLink>
-            
+
             <NavLink to="/admin/controls" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-shield-halved"></i>
               <span>All Controls</span>
@@ -72,12 +72,12 @@ const Sidebar = () => {
           {/* Assessment Section */}
           <div className="nav-section">
             <h3 className="nav-section-title">Assessment</h3>
-            
+
             <NavLink to="/admin/questions" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-circle-question"></i>
               <span>Questions</span>
             </NavLink>
-            
+
             <NavLink to="/admin/evidence" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-file-lines"></i>
               <span>Evidence</span>
@@ -87,31 +87,47 @@ const Sidebar = () => {
           {/* ✅ NEW: Tenant Management Section */}
           <div className="nav-section">
             <h3 className="nav-section-title">Tenant Management</h3>
-            
+
             <NavLink to="/admin/tenants" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-building"></i>
               <span>Tenants</span>
             </NavLink>
-            
+
             <NavLink to="/admin/subscription-plans" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-crown"></i>
               <span>Subscription Plans</span>
             </NavLink>
-            
+
             <NavLink to="/admin/billing" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-file-invoice-dollar"></i>
               <span>Billing History</span>
             </NavLink>
-            
+
             <NavLink to="/admin/audit-logs" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-clock-rotate-left"></i>
               <span>Audit Logs</span>
             </NavLink>
-            
+
             <NavLink to="/admin/usage-analytics" className="nav-link" onClick={closeSidebar}>
               <i className="fas fa-chart-line"></i>
               <span>Usage Analytics</span>
             </NavLink>
+
+            {/* ✅ NEW: AI & Analytics Section */}
+          <div className="nav-section">
+            <h3 className="nav-section-title">AI & Analytics</h3>
+
+            <NavLink to="/admin/ai-reports" className="nav-link" onClick={closeSidebar}>
+              <i className="fas fa-robot"></i>
+              <span>AI Reports</span>
+            </NavLink>
+
+            <NavLink to="/admin/ai-dashboard" className="nav-link" onClick={closeSidebar}>
+              <i className="fas fa-chart-line"></i>
+              <span>AI Dashboard</span>
+            </NavLink>
+          </div>
+            
           </div>
         </nav>
 

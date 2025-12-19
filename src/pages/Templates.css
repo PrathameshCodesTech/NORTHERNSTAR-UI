@@ -2,6 +2,7 @@
   min-height: calc(100vh - 240px);
   background-color: #ffffff;
   padding: 40px 20px;
+  overflow-x: hidden;
 }
 
 .progress-header {
@@ -97,85 +98,74 @@
   min-height: 500px;
 }
 
-.template-cards-stack {
+.onboarding-cards-stack {
   position: relative;
-  width: 400px;
-  height: 450px;
+  width: 500px;
+  height: 420px;
 }
 
-/* Card floating animation */
-@keyframes cardFloat {
-  0%, 100% {
-    transform: perspective(1000px) rotateY(var(--rotate-y)) translateX(var(--translate-x)) translateZ(var(--translate-z)) translateY(0px);
-  }
-  50% {
-    transform: perspective(1000px) rotateY(var(--rotate-y)) translateX(var(--translate-x)) translateZ(var(--translate-z)) translateY(-15px);
-  }
-}
-
-/* Card subtle rotation animation */
-@keyframes cardRotate {
-  0%, 100% {
-    transform: perspective(1000px) rotateY(var(--rotate-y)) translateX(var(--translate-x)) translateZ(var(--translate-z)) rotate(0deg);
-  }
-  50% {
-    transform: perspective(1000px) rotateY(var(--rotate-y)) translateX(var(--translate-x)) translateZ(var(--translate-z)) rotate(2deg);
-  }
-}
-
-.template-card {
+.onboarding-card {
   position: absolute;
   width: 280px;
   height: 380px;
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  animation: cardFloat 3s ease-in-out infinite;
+  overflow-y: auto; /* Changed from hidden to auto */
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  top: 20px;
 }
 
-.template-card:nth-child(1) {
-  --rotate-y: -15deg;
-  --translate-x: 0px;
-  --translate-z: 0px;
-  animation-duration: 3s;
+/* Add custom scrollbar styling for better look */
+.onboarding-card::-webkit-scrollbar {
+  width: 6px;
 }
 
-.template-card:nth-child(2) {
-  --rotate-y: -13deg;
-  --translate-x: 40px;
-  --translate-z: -20px;
-  animation-duration: 3.2s;
+.onboarding-card::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
 }
 
-.template-card:nth-child(3) {
-  --rotate-y: -11deg;
-  --translate-x: 80px;
-  --translate-z: -40px;
-  animation-duration: 3.4s;
+.onboarding-card::-webkit-scrollbar-thumb {
+  background: #14b8a6;
+  border-radius: 10px;
 }
 
-.template-card:nth-child(4) {
-  --rotate-y: -9deg;
-  --translate-x: 120px;
-  --translate-z: -60px;
-  animation-duration: 3.6s;
+.onboarding-card::-webkit-scrollbar-thumb:hover {
+  background: #0d9488;
 }
 
-.template-card:nth-child(5) {
-  --rotate-y: -7deg;
-  --translate-x: 160px;
-  --translate-z: -80px;
-  animation-duration: 3.8s;
+.onboarding-card:nth-child(1) {
+  left: 0px;
+  z-index: 5;
 }
 
-.template-card:hover {
-  transform: perspective(1000px) rotateY(var(--rotate-y)) translateX(var(--translate-x)) translateZ(var(--translate-z)) scale(1.05) !important;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
-  z-index: 10 !important;
-  animation-play-state: paused;
+.onboarding-card:nth-child(2) {
+  left: 60px;
+  z-index: 4;
+}
+
+.onboarding-card:nth-child(3) {
+  left: 120px;
+  z-index: 3;
+}
+
+.onboarding-card:nth-child(4) {
+  left: 180px;
+  z-index: 2;
+}
+
+.onboarding-card:nth-child(5) {
+  left: 240px;
+  z-index: 1;
+}
+
+.onboarding-card:hover {
+  transform: translateY(-20px) scale(1.05);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  z-index: 100 !important;
 }
 
 .card-header {
@@ -206,7 +196,6 @@
   background-color: #f9fafb;
   border-radius: 8px;
   border-left: 3px solid #14b8a6;
-  animation: slideIn 0.8s ease-out;
   transition: all 0.3s ease;
 }
 
@@ -231,18 +220,6 @@
   font-weight: 500;
 }
 
-/* Slide in animation */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 @media (max-width: 968px) {
   .templates-content {
     flex-direction: column;
@@ -253,28 +230,34 @@
     font-size: 36px;
   }
 
-  .template-cards-stack {
+  .templates-right {
+    padding-right: 0;
+    overflow-x: auto;
+  }
+
+  .onboarding-cards-stack {
     width: 100%;
-    max-width: 400px;
+    min-width: 500px;
+    margin: 0 auto;
   }
 
-  .template-card:nth-child(1) {
-    --translate-x: 0px;
+  .onboarding-card:nth-child(1) {
+    left: 0px;
   }
 
-  .template-card:nth-child(2) {
-    --translate-x: 30px;
+  .onboarding-card:nth-child(2) {
+    left: 60px;
   }
 
-  .template-card:nth-child(3) {
-    --translate-x: 60px;
+  .onboarding-card:nth-child(3) {
+    left: 120px;
   }
 
-  .template-card:nth-child(4) {
-    --translate-x: 90px;
+  .onboarding-card:nth-child(4) {
+    left: 180px;
   }
 
-  .template-card:nth-child(5) {
-    --translate-x: 120px;
+  .onboarding-card:nth-child(5) {
+    left: 240px;
   }
 }

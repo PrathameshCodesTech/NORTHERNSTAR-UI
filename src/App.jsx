@@ -25,6 +25,10 @@ import SubcategoryView from './admin/pages/SubcategoryView';
 import ControlList from './admin/pages/ControlList';
 import QuestionList from './admin/pages/QuestionList';
 import EvidenceList from './admin/pages/EvidenceList';
+import AIReports from './admin/pages/AIReports';
+import AIDashboard from './admin/pages/AIDashboard';
+
+
 
 // Admin Components - Tenant Management
 import TenantsDashboard from './admin/tenant-management/pages/TenantsDashboard';
@@ -79,11 +83,7 @@ function App() {
         <Route path="/checkout" element={<Checkout />} />
 
         {/* Tenant User Routes - COMPLETE SYSTEM */}
-        <Route path="/app/*" element={
-          <ProtectedRoute>
-            <TenantLayout />
-          </ProtectedRoute>
-        }>
+       <Route path="/app/*" element={<TenantLayout />}>
           {/* Dashboard & Frameworks */}
           <Route path="dashboard" element={<TenantDashboard />} />
           <Route path="frameworks" element={<MyFrameworks />} />
@@ -106,6 +106,8 @@ function App() {
           <Route path="settings/team" element={<TeamSettings />} />
         </Route>
 
+        
+
         {/* Admin Routes with AdminLayout (Sidebar + Content) - PROTECTED */}
         <Route path="/admin" element={
           <ProtectedRoute>
@@ -121,7 +123,8 @@ function App() {
           <Route path="controls" element={<ControlList />} />
           <Route path="questions" element={<QuestionList />} />
           <Route path="evidence" element={<EvidenceList />} />
-
+          <Route path="ai-reports" element={<AIReports />} />
+          <Route path="ai-dashboard" element={<AIDashboard />} />
           {/* Tenant Management Routes */}
           <Route path="tenants" element={<TenantsDashboard />} />
           <Route path="tenants/:id" element={<TenantDetailView />} />
@@ -129,6 +132,7 @@ function App() {
           <Route path="billing" element={<BillingHistory />} />
           <Route path="audit-logs" element={<AuditLogs />} />
           <Route path="usage-analytics" element={<UsageAnalytics />} />
+          
         </Route>
 
       </Routes>

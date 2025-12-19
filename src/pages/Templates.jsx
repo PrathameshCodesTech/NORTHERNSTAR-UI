@@ -27,17 +27,18 @@ const Templates = () => {
           </button>
         </div>
 
-        <div className="templates-right">
+        <div className="onboarding-cards-stack">
           <div className="template-cards-stack">
             {[1, 2, 3, 4, 5].map((item, index) => (
               <div
                 key={item}
-                className="template-card"
+                className="onboarding-card"
                 style={{
-                  transform: `perspective(1000px) rotateY(${-15 + index * 2}deg) translateX(${index * 40}px) translateZ(${-index * 20}px)`,
+                  transform: `perspective(1000px) rotateY(${-15 + index * 2}deg) translateX(${index * 30}px) translateZ(${-index * 20}px)`,
                   zIndex: 5 - index,
                   animationDelay: `${index * 0.2}s`
                 }}
+
               >
                 <div className="card-header" style={{
                   background: `linear-gradient(135deg, 

@@ -1,0 +1,478 @@
+/* ============================================================================
+   AI DASHBOARD - PowerBI-like Interface
+============================================================================ */
+
+.dashboard-page {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background: #f3f4f6;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+}
+
+/* Header */
+.dashboard-header {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.dashboard-name-input {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0a0a0a;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+  min-width: 300px;
+}
+
+.dashboard-name-input:focus {
+  outline: none;
+  border-bottom-color: #0d9488;
+}
+
+.widget-count {
+  padding: 6px 14px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-save,
+.btn-export {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-save {
+  background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.4);
+}
+
+.btn-export {
+  background: white;
+  color: #dc2626;
+  border: 2px solid #fca5a5;
+}
+
+.btn-export:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #dc2626;
+}
+
+.btn-export:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Add Widget Section */
+.add-widget-section {
+  grid-column: 1 / -1;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.widget-form {
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.question-input {
+  flex: 1;
+  padding: 14px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+.question-input:focus {
+  outline: none;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.btn-add-widget {
+  padding: 14px 28px;
+  background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.btn-add-widget:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.btn-add-widget:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Quick Templates */
+.quick-templates {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.templates-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.template-btn {
+  padding: 8px 14px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.template-btn:hover:not(:disabled) {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #0369a1;
+}
+
+.template-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error Alert */
+.error-alert {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fee2e2;
+  border: 2px solid #fca5a5;
+  border-radius: 12px;
+  color: #991b1b;
+}
+
+.error-alert i {
+  font-size: 20px;
+  color: #dc2626;
+}
+
+.error-alert button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #991b1b;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+/* Empty State */
+.empty-dashboard {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 16px;
+  color: #9ca3af;
+}
+
+.empty-dashboard i {
+  font-size: 64px;
+  margin-bottom: 20px;
+  display: block;
+  color: #d1d5db;
+}
+
+.empty-dashboard h3 {
+  font-size: 24px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+}
+
+.empty-dashboard p {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Dashboard Widget */
+.dashboard-widget {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f3f4f6;
+  transition: all 0.2s ease;
+}
+
+.dashboard-widget:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.widget-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+.widget-title i {
+  color: #0d9488;
+}
+
+.widget-remove {
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.widget-remove:hover {
+  background: #fee2e2;
+}
+
+.widget-content {
+  padding: 0;
+}
+
+/* Widget Insights */
+.widget-insights {
+  padding: 16px 20px;
+  background: #f0fdfa;
+  border-top: 2px solid #ccfbf1;
+}
+
+.insights-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #0d9488;
+  font-size: 14px;
+}
+
+.insights-header i {
+  font-size: 16px;
+  color: #f59e0b;
+}
+
+.widget-insights ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #0f766e;
+}
+
+.widget-insights li {
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+/* Saved Dashboards Sidebar */
+.saved-dashboards {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  align-self: start;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.saved-dashboards h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.saved-dashboards h3 i {
+  color: #f59e0b;
+}
+
+.dashboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dashboard-item:hover {
+  background: #f0fdfa;
+  border-color: #0d9488;
+}
+
+.dashboard-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-info strong {
+  display: block;
+  font-size: 14px;
+  color: #0a0a0a;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-info span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dashboard-delete {
+  padding: 8px;
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.dashboard-delete:hover {
+  background: #fee2e2;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .dashboard-page {
+    grid-template-columns: 1fr;
+  }
+
+  .saved-dashboards {
+    position: static;
+    max-height: none;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-left {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-name-input {
+    min-width: auto;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .btn-add-widget {
+    justify-content: center;
+  }
+}
