@@ -1,50 +1,79 @@
 // src/pages/Pricing.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useOnboarding } from '../contexts/OnboardingContext';
+import { subscriptionPlanAPI } from '../services/tenantService';
 import './Pricing.css';
 
 const Pricing = () => {
   const navigate = useNavigate();
-  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'annual'
-  const [selectedPlan, setSelectedPlan] = useState(null);
+  const { onboardingData, updateOnboardingData } = useOnboarding();
+  
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [billingCycle, setBillingCycle] = useState(
+    onboardingData.billing_cycle || 'monthly'
+  );
+  const [selectedPlan, setSelectedPlan] = useState(
+    onboardingData.subscription_plan_code || null
+  );
 
-  // Mock data - will be replaced with API call
-  const plans = [
-    {
-      id: 'basic',
-      code: 'BASIC',
-      name: 'Basic',
-      description: 'Perfect for small teams getting started with compliance',
-      monthly_price: 299,
-      annual_price: 3228, // 10% discount
-      max_users: 10,
-      max_frameworks: 2,
-      max_controls: 500,
-      storage_gb: 10,
-      features: [
+  // Fetch subscription plans from backend
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await subscriptionPlanAPI.getAll();
+      
+      // Map backend response to include features and descriptions
+      const mappedPlans = response.results.map(plan => ({
+        ...plan,
+        // Add descriptions based on plan code
+        description: getDescriptionByCode(plan.code),
+        // Add features based on plan code
+        features: getFeaturesByCode(plan.code),
+        // Add popular flag
+        popular: plan.code === 'PROFESSIONAL'
+      }));
+      
+      setPlans(mappedPlans);
+    } catch (err) {
+      console.error('Error fetching plans:', err);
+      setError('Failed to load subscription plans. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper: Get description by plan code
+  const getDescriptionByCode = (code) => {
+    const descriptions = {
+      'BASIC': 'Perfect for small teams getting started with compliance',
+      'PROFESSIONAL': 'For growing teams with advanced compliance needs',
+      'ENTERPRISE': 'For large organizations with complex requirements'
+    };
+    return descriptions[code] || 'Choose this plan for your compliance needs';
+  };
+
+  // Helper: Get features by plan code
+  const getFeaturesByCode = (code) => {
+    const features = {
+      'BASIC': [
         'View-only access to frameworks',
         'Up to 10 team members',
-        'Choose any 2 frameworks',
+        'Choose any 4 frameworks',
         '10GB document storage',
         'Basic compliance reports',
         'Email support',
         'Mobile app access'
       ],
-      support_level: 'Email Support',
-      popular: false
-    },
-    {
-      id: 'professional',
-      code: 'PROFESSIONAL',
-      name: 'Professional',
-      description: 'For growing teams with advanced compliance needs',
-      monthly_price: 599,
-      annual_price: 6468, // 10% discount
-      max_users: 50,
-      max_frameworks: 5,
-      max_controls: 2000,
-      storage_gb: 50,
-      features: [
+      'PROFESSIONAL': [
         'Customize controls & frameworks',
         'Up to 50 team members',
         'Choose any 5 frameworks',
@@ -55,21 +84,7 @@ const Pricing = () => {
         'Custom workflows',
         'Audit trail & history'
       ],
-      support_level: 'Priority Support',
-      popular: true
-    },
-    {
-      id: 'enterprise',
-      code: 'ENTERPRISE',
-      name: 'Enterprise',
-      description: 'For large organizations with complex requirements',
-      monthly_price: 1499,
-      annual_price: 16188, // 10% discount
-      max_users: 0, // unlimited
-      max_frameworks: 0, // unlimited
-      max_controls: 0, // unlimited
-      storage_gb: 500,
-      features: [
+      'ENTERPRISE': [
         'Full customization capabilities',
         'Unlimited team members',
         'All frameworks included',
@@ -81,11 +96,10 @@ const Pricing = () => {
         'On-premise deployment option',
         'SLA guarantees',
         '24/7 phone support'
-      ],
-      support_level: 'Dedicated Support',
-      popular: false
-    }
-  ];
+      ]
+    };
+    return features[code] || [];
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {
@@ -93,36 +107,103 @@ const Pricing = () => {
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(price);
+    }).format(parseFloat(price));
   };
 
   const getMonthlyEquivalent = (annualPrice) => {
-    return formatPrice(annualPrice / 12);
+    return formatPrice(parseFloat(annualPrice) / 12);
   };
 
   const calculateSavings = (monthlyPrice, annualPrice) => {
-    const monthlyCost = monthlyPrice * 12;
-    const savings = monthlyCost - annualPrice;
+    const monthlyCost = parseFloat(monthlyPrice) * 12;
+    const savings = monthlyCost - parseFloat(annualPrice);
     return formatPrice(savings);
+  };
+
+  const calculateDiscountPercentage = (monthlyPrice, annualPrice) => {
+    const monthlyCost = parseFloat(monthlyPrice) * 12;
+    const discount = ((monthlyCost - parseFloat(annualPrice)) / monthlyCost) * 100;
+    return Math.round(discount);
   };
 
   const handleSelectPlan = (plan) => {
     setSelectedPlan(plan.code);
-    // Store selection in sessionStorage
-    sessionStorage.setItem('selectedPlan', JSON.stringify({
-      plan_code: plan.code,
-      plan_name: plan.name,
-      billing_cycle: billingCycle,
-      price: billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price
-    }));
+    
+    const selectedPlanData = {
+    plan_id: plan.id,
+    plan_code: plan.code,
+    plan_name: plan.name,
+    billing_cycle: billingCycle,
+    price: billingCycle === 'monthly' 
+      ? parseFloat(plan.monthly_price) 
+      : parseFloat(plan.annual_price),
+    monthly_price: parseFloat(plan.monthly_price),
+    annual_price: parseFloat(plan.annual_price),
+    max_users: plan.max_users,
+    max_frameworks: plan.max_frameworks
+  };
+    // Save to context
+   updateOnboardingData({
+    subscription_plan_code: plan.code,
+    billing_cycle: billingCycle,
+    selected_plan: selectedPlanData
+  });
+
+    sessionStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
     
     // Navigate to framework selection
     navigate('/frameworks');
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="pricing-page">
+        <div className="pricing-content">
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Loading subscription plans...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="pricing-page">
+        <div className="pricing-content">
+          <div className="error-container">
+            <i className="fas fa-exclamation-triangle"></i>
+            <h2>Oops! Something went wrong</h2>
+            <p>{error}</p>
+            <button className="retry-btn" onClick={fetchPlans}>
+              <i className="fas fa-redo"></i> Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No plans found
+  if (plans.length === 0) {
+    return (
+      <div className="pricing-page">
+        <div className="pricing-content">
+          <div className="empty-state">
+            <i className="fas fa-inbox"></i>
+            <h2>No Plans Available</h2>
+            <p>Please contact support for more information.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pricing-page">
-     
       {/* Pricing Content */}
       <div className="pricing-content">
         {/* Billing Toggle */}
@@ -140,7 +221,9 @@ const Pricing = () => {
               onClick={() => setBillingCycle('annual')}
             >
               Annual
-              <span className="save-badge">Save 10%</span>
+              <span className="save-badge">
+                Save {calculateDiscountPercentage(plans[0]?.monthly_price, plans[0]?.annual_price)}%
+              </span>
             </button>
           </div>
         </div>
@@ -201,10 +284,6 @@ const Pricing = () => {
                     {plan.max_frameworks === 0 ? 'All' : `${plan.max_frameworks}`} frameworks
                   </span>
                 </div>
-                <div className="limit-item">
-                  <i className="fas fa-database"></i>
-                  <span>{plan.storage_gb}GB storage</span>
-                </div>
               </div>
 
               <div className="plan-features">
@@ -229,7 +308,7 @@ const Pricing = () => {
                   </>
                 ) : (
                   <>
-                    Select {plan.name} <i className="fas fa-arrow-right"></i>
+                    Select {plan.name.replace(' Plan', '')} <i className="fas fa-arrow-right"></i>
                   </>
                 )}
               </button>
@@ -279,8 +358,6 @@ const Pricing = () => {
           </div>
         </div>
       </div>
-
-      
     </div>
   );
 };

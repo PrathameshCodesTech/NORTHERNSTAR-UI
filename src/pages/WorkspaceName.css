@@ -138,3 +138,24 @@
 .back-btn:hover {
   color: #0a0a0a;
 }
+/* Error styles for WorkspaceName */
+.input-wrapper {
+  width: 100%;
+  max-width: 500px;
+}
+
+.company-input.error {
+  border-color: #e74c3c;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.continue-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

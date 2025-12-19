@@ -46,6 +46,7 @@ const TenantCard = ({ tenant, onActivate, onSuspend, onReactivate, onDelete }) =
       </div>
 
       {/* Contact */}
+{/* Contact */}
       <div className="tenant-contact">
         <div className="contact-item">
           <i className="fas fa-envelope"></i>
@@ -58,6 +59,24 @@ const TenantCard = ({ tenant, onActivate, onSuspend, onReactivate, onDelete }) =
           </div>
         )}
       </div>
+
+      {/* ✅ NEW: Requested Frameworks */}
+      {tenant.requested_frameworks && tenant.requested_frameworks.length > 0 && (
+        <div className="tenant-requested-frameworks">
+          <div className="frameworks-label">
+            <i className="fas fa-layer-group"></i>
+            <span>Requested Frameworks ({tenant.requested_frameworks.length}):</span>
+          </div>
+          <div className="frameworks-tags">
+            {tenant.requested_frameworks.map((framework, index) => (
+              <span key={index} className="framework-tag">
+                <i className="fas fa-shield-halved"></i>
+                {framework.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="tenant-stats-mini">

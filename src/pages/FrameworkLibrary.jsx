@@ -1,218 +1,196 @@
 // src/pages/FrameworkLibrary.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { frameworkCategoryAPI, frameworkAPI } from '../services/templateService';
+import { useOnboarding } from '../contexts/OnboardingContext';
 import './FrameworkLibrary.css';
 
 const FrameworkLibrary = () => {
+  const { onboardingData } = useOnboarding();
   const navigate = useNavigate();
   const [selectedFrameworks, setSelectedFrameworks] = useState([]);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [expandedFramework, setExpandedFramework] = useState(null);
 
-  // Get selected plan from session storage
-  const selectedPlan = JSON.parse(sessionStorage.getItem('selectedPlan') || '{}');
-  
-  // Mock framework data - will be replaced with API call
-  const frameworks = [
-    {
-      id: 'iso27001',
-      name: 'ISO 27001',
-      code: 'ISO27001',
-      description: 'Information Security Management System - International standard for managing information security',
-      category: 'Security & Privacy',
-      version: '2022',
-      control_count: 114,
-      domain_count: 4,
-      domains: [
-        {
-          id: 'd1',
-          name: 'Organizational Controls',
-          control_count: 37,
-          categories: [
-            {
-              id: 'c1',
-              name: 'Access Control',
-              subcategories: [
-                { id: 'sc1', name: 'User Access Management', control_count: 8 },
-                { id: 'sc2', name: 'User Responsibilities', control_count: 5 }
-              ]
-            },
-            {
-              id: 'c2',
-              name: 'Cryptography',
-              subcategories: [
-                { id: 'sc3', name: 'Cryptographic Controls', control_count: 4 }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'd2',
-          name: 'People Controls',
-          control_count: 8,
-          categories: [
-            {
-              id: 'c3',
-              name: 'Human Resource Security',
-              subcategories: [
-                { id: 'sc4', name: 'Prior to Employment', control_count: 3 },
-                { id: 'sc5', name: 'During Employment', control_count: 3 }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'd3',
-          name: 'Physical Controls',
-          control_count: 14,
-          categories: []
-        },
-        {
-          id: 'd4',
-          name: 'Technological Controls',
-          control_count: 55,
-          categories: []
-        }
-      ],
-      icon: 'fa-shield-halved',
-      color: '#3b82f6'
-    },
-    {
-      id: 'gdpr',
-      name: 'GDPR',
-      code: 'GDPR',
-      description: 'General Data Protection Regulation - EU data protection and privacy regulation',
-      category: 'Data Protection',
-      version: '2018',
-      control_count: 99,
-      domain_count: 3,
-      domains: [
-        {
-          id: 'gd1',
-          name: 'Principles',
-          control_count: 7,
-          categories: []
-        },
-        {
-          id: 'gd2',
-          name: 'Rights of Data Subjects',
-          control_count: 44,
-          categories: []
-        },
-        {
-          id: 'gd3',
-          name: 'Controller & Processor Obligations',
-          control_count: 48,
-          categories: []
-        }
-      ],
-      icon: 'fa-user-shield',
-      color: '#10b981'
-    },
-    {
-      id: 'sox',
-      name: 'SOX',
-      code: 'SOX',
-      description: 'Sarbanes-Oxley Act - Financial reporting and internal controls for public companies',
-      category: 'Financial Compliance',
-      version: '2002',
-      control_count: 68,
-      domain_count: 2,
-      domains: [
-        {
-          id: 'sd1',
-          name: 'Internal Controls',
-          control_count: 35,
-          categories: []
-        },
-        {
-          id: 'sd2',
-          name: 'Financial Reporting',
-          control_count: 33,
-          categories: []
-        }
-      ],
-      icon: 'fa-file-invoice-dollar',
-      color: '#f59e0b'
-    },
-    {
-      id: 'hipaa',
-      name: 'HIPAA',
-      code: 'HIPAA',
-      description: 'Health Insurance Portability and Accountability Act - Healthcare data privacy and security',
-      category: 'Healthcare',
-      version: '1996',
-      control_count: 90,
-      domain_count: 3,
-      domains: [
-        {
-          id: 'hd1',
-          name: 'Administrative Safeguards',
-          control_count: 38,
-          categories: []
-        },
-        {
-          id: 'hd2',
-          name: 'Physical Safeguards',
-          control_count: 24,
-          categories: []
-        },
-        {
-          id: 'hd3',
-          name: 'Technical Safeguards',
-          control_count: 28,
-          categories: []
-        }
-      ],
-      icon: 'fa-heart-pulse',
-      color: '#ef4444'
-    },
-    {
-      id: 'pci',
-      name: 'PCI DSS',
-      code: 'PCIDSS',
-      description: 'Payment Card Industry Data Security Standard - Security for payment card transactions',
-      category: 'Financial Security',
-      version: '4.0',
-      control_count: 78,
-      domain_count: 6,
-      domains: [],
-      icon: 'fa-credit-card',
-      color: '#8b5cf6'
-    },
-    {
-      id: 'nist',
-      name: 'NIST CSF',
-      code: 'NISTCSF',
-      description: 'NIST Cybersecurity Framework - Comprehensive cybersecurity risk management',
-      category: 'Cybersecurity',
-      version: '2.0',
-      control_count: 108,
-      domain_count: 5,
-      domains: [],
-      icon: 'fa-network-wired',
-      color: '#06b6d4'
-    }
-  ];
 
-  const categories = [
-    { id: 'all', name: 'All Frameworks', count: frameworks.length },
-    { id: 'security', name: 'Security & Privacy', count: 2 },
-    { id: 'data', name: 'Data Protection', count: 1 },
-    { id: 'financial', name: 'Financial Compliance', count: 2 },
-    { id: 'healthcare', name: 'Healthcare', count: 1 },
-    { id: 'cyber', name: 'Cybersecurity', count: 1 }
-  ];
+  // API Data States
+  const [categories, setCategories] = useState([]);
+  const [frameworks, setFrameworks] = useState([]);
+  const [frameworkDetails, setFrameworkDetails] = useState({}); // Cache for expanded frameworks
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get selected plan from session storage
+  const selectedPlan = onboardingData.selected_plan ||
+    JSON.parse(sessionStorage.getItem('selectedPlan') || '{}');
+
+  // Icon mapping for framework categories
+  const iconMap = {
+    'bank': 'fa-building-columns',
+    'shield': 'fa-shield-halved',
+    'lock': 'fa-lock',
+    'health': 'fa-heart-pulse',
+    'industry': 'fa-industry',
+    'leaf': 'fa-leaf',
+    'network': 'fa-network-wired',
+    'credit-card': 'fa-credit-card'
+  };
+
+  // ============================================================================
+  // API CALLS
+  // ============================================================================
+
+  // Load categories on mount
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  // Load frameworks on mount
+  useEffect(() => {
+    loadFrameworks();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const response = await frameworkCategoryAPI.getAll();
+
+      // Transform API response to match component structure
+      const categoriesData = [
+        { id: 'all', name: 'All Frameworks', count: 0 }, // Will update count after frameworks load
+        ...response.results.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          code: cat.code,
+          icon: iconMap[cat.icon] || 'fa-folder',
+          color: cat.color,
+          count: 0 // Will be updated from frameworks
+        }))
+      ];
+
+      setCategories(categoriesData);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      setError('Failed to load framework categories');
+    }
+  };
+
+  const loadFrameworks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch only ACTIVE frameworks
+      const response = await frameworkAPI.getAll({
+        status: 'ACTIVE',
+        is_active: true
+      });
+
+      // Enrich frameworks with stats (domain_count, control_count)
+      const enrichedFrameworks = await Promise.all(
+        response.results.map(async (fw) => {
+          try {
+            const stats = await frameworkAPI.getStats(fw.id);
+
+            return {
+              id: fw.id,
+              name: fw.name,
+              code: fw.name, // Use name as code
+              full_name: fw.full_name,
+              description: fw.description || `${fw.full_name} compliance framework`,
+              category: fw.category_name || 'General',
+              category_id: fw.category,
+              version: fw.version,
+              status: fw.status,
+              control_count: stats.hierarchy.controls,
+              domain_count: stats.hierarchy.domains,
+              // Get icon from category or use default
+              icon: 'fa-shield-halved', // Default, will be updated from category match
+              color: '#3b82f6' // Default color
+            };
+          } catch (err) {
+            console.error(`Failed to load stats for ${fw.name}:`, err);
+            // Return framework without stats
+            return {
+              id: fw.id,
+              name: fw.name,
+              code: fw.name,
+              full_name: fw.full_name,
+              description: fw.description || `${fw.full_name} compliance framework`,
+              category: fw.category_name || 'General',
+              category_id: fw.category,
+              version: fw.version,
+              status: fw.status,
+              control_count: 0,
+              domain_count: 0,
+              icon: 'fa-shield-halved',
+              color: '#3b82f6'
+            };
+          }
+        })
+      );
+
+      setFrameworks(enrichedFrameworks);
+
+      // Update category counts
+      updateCategoryCounts(enrichedFrameworks);
+
+    } catch (err) {
+      console.error('Failed to load frameworks:', err);
+      setError('Failed to load frameworks. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateCategoryCounts = (frameworksData) => {
+    setCategories(prevCategories => {
+      return prevCategories.map(cat => {
+        if (cat.id === 'all') {
+          return { ...cat, count: frameworksData.length };
+        }
+
+        const count = frameworksData.filter(fw => fw.category_id === cat.id).length;
+        return { ...cat, count };
+      });
+    });
+  };
+
+  const loadFrameworkDetails = async (frameworkId) => {
+    // Check if already loaded
+    if (frameworkDetails[frameworkId]) {
+      return frameworkDetails[frameworkId];
+    }
+
+    try {
+      const details = await frameworkAPI.getById(frameworkId, true); // deep=true
+
+      // Cache the details
+      setFrameworkDetails(prev => ({
+        ...prev,
+        [frameworkId]: details
+      }));
+
+      return details;
+    } catch (err) {
+      console.error(`Failed to load framework details for ${frameworkId}:`, err);
+      throw err;
+    }
+  };
+
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
 
   const handleSelectFramework = (framework) => {
     if (selectedFrameworks.includes(framework.id)) {
       setSelectedFrameworks(selectedFrameworks.filter(id => id !== framework.id));
     } else {
       // Check if limit reached (based on selected plan)
-      const maxFrameworks = selectedPlan.plan_code === 'BASIC' ? 2 : selectedPlan.plan_code === 'PROFESSIONAL' ? 5 : 999;
-      
+      const maxFrameworks = selectedPlan.plan_code === 'BASIC' ? 2 :
+        selectedPlan.plan_code === 'PROFESSIONAL' ? 5 : 999;
+
       if (selectedFrameworks.length >= maxFrameworks) {
         alert(`You can only select ${maxFrameworks} frameworks with your ${selectedPlan.plan_name} plan. Please remove a framework first or upgrade your plan.`);
         return;
@@ -227,7 +205,8 @@ const FrameworkLibrary = () => {
       return;
     }
 
-    // Store selection
+
+    //  Store selection to sessionStorage
     sessionStorage.setItem('selectedFrameworks', JSON.stringify(
       frameworks.filter(f => selectedFrameworks.includes(f.id)).map(f => ({
         id: f.id,
@@ -240,14 +219,35 @@ const FrameworkLibrary = () => {
     navigate('/checkout');
   };
 
-  const toggleFrameworkExpand = (frameworkId) => {
-    setExpandedFramework(expandedFramework === frameworkId ? null : frameworkId);
+  const toggleFrameworkExpand = async (frameworkId) => {
+    if (expandedFramework === frameworkId) {
+      setExpandedFramework(null);
+    } else {
+      setExpandedFramework(frameworkId);
+
+      // Load details if not already loaded
+      if (!frameworkDetails[frameworkId]) {
+        try {
+          await loadFrameworkDetails(frameworkId);
+        } catch (err) {
+          alert('Failed to load framework details. Please try again.');
+          setExpandedFramework(null);
+        }
+      }
+    }
   };
 
+  // ============================================================================
+  // FILTERING
+  // ============================================================================
+
   const filteredFrameworks = frameworks.filter(f => {
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         f.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || f.category.toLowerCase().includes(selectedCategory);
+    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      f.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      f.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCategory = selectedCategory === 'all' || f.category_id === selectedCategory;
+
     return matchesSearch && matchesCategory;
   });
 
@@ -257,11 +257,96 @@ const FrameworkLibrary = () => {
     return 'Unlimited';
   };
 
+  // ============================================================================
+  // RENDER HELPERS
+  // ============================================================================
+
+  const renderFrameworkDetails = (framework) => {
+    const details = frameworkDetails[framework.id];
+
+    if (!details || !details.domains || details.domains.length === 0) {
+      return (
+        <div className="framework-details">
+          <p className="no-details">No detailed structure available for this framework.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="framework-details">
+        <h4 className="details-title">Framework Structure:</h4>
+        <div className="domains-list">
+          {details.domains.map(domain => (
+            <div key={domain.id} className="domain-item">
+              <div className="domain-header">
+                <i className="fas fa-folder"></i>
+                <span className="domain-name">{domain.name}</span>
+                <span className="control-count">
+                  {domain.categories?.reduce((sum, cat) =>
+                    sum + (cat.subcategories?.reduce((subSum, sub) =>
+                      subSum + (sub.controls?.length || 0), 0) || 0), 0) || 0} controls
+                </span>
+              </div>
+              {domain.categories && domain.categories.length > 0 && (
+                <div className="categories-list">
+                  {domain.categories.map(category => (
+                    <div key={category.id} className="category-item">
+                      <i className="fas fa-folder-open"></i>
+                      <span>{category.name}</span>
+                      {category.subcategories && category.subcategories.length > 0 && (
+                        <div className="subcategories-list">
+                          {category.subcategories.map(sub => (
+                            <div key={sub.id} className="subcategory-item">
+                              <i className="fas fa-file-alt"></i>
+                              <span>{sub.name}</span>
+                              <span className="count">({sub.controls?.length || 0})</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
+  if (loading) {
+    return (
+      <div className="framework-library-page">
+        <div className="loading-container">
+          <i className="fas fa-spinner fa-spin"></i>
+          <p>Loading frameworks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="framework-library-page">
+        <div className="error-container">
+          <i className="fas fa-exclamation-circle"></i>
+          <h3>Error Loading Frameworks</h3>
+          <p>{error}</p>
+          <button onClick={loadFrameworks} className="retry-btn">
+            <i className="fas fa-refresh"></i> Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="framework-library-page">
-    
-
-
       {/* Main Content */}
       <div className="library-content">
         {/* Selection Summary */}
@@ -275,7 +360,7 @@ const FrameworkLibrary = () => {
               {selectedFrameworks.length} / {getFrameworkLimit()} frameworks selected
             </div>
           </div>
-          <button 
+          <button
             className="proceed-btn"
             onClick={handleProceedToPayment}
             disabled={selectedFrameworks.length === 0}
@@ -334,12 +419,12 @@ const FrameworkLibrary = () => {
               className={`framework-card ${selectedFrameworks.includes(framework.id) ? 'selected' : ''} ${expandedFramework === framework.id ? 'expanded' : ''}`}
             >
               <div className="framework-header">
-                <div className="framework-icon" style={{ backgroundColor: framework.color }}>
+                {/* <div className="framework-icon" style={{ backgroundColor: framework.color }}>
                   <i className={`fas ${framework.icon}`}></i>
-                </div>
+                </div> */}
                 <div className="framework-info">
                   <h3 className="framework-name">{framework.name}</h3>
-                  <p className="framework-code">{framework.code} v{framework.version}</p>
+                  <p className="framework-code">v{framework.version}</p>
                 </div>
                 {selectedFrameworks.includes(framework.id) && (
                   <div className="selected-badge">
@@ -369,9 +454,18 @@ const FrameworkLibrary = () => {
                 <button
                   className="view-details-btn"
                   onClick={() => toggleFrameworkExpand(framework.id)}
+                  disabled={expandedFramework === framework.id && !frameworkDetails[framework.id]}
                 >
-                  <i className={`fas fa-chevron-${expandedFramework === framework.id ? 'up' : 'down'}`}></i>
-                  {expandedFramework === framework.id ? 'Hide' : 'View'} Details
+                  {expandedFramework === framework.id && !frameworkDetails[framework.id] ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i> Loading...
+                    </>
+                  ) : (
+                    <>
+                      <i className={`fas fa-chevron-${expandedFramework === framework.id ? 'up' : 'down'}`}></i>
+                      {expandedFramework === framework.id ? 'Hide' : 'View'} Details
+                    </>
+                  )}
                 </button>
                 <button
                   className={`select-framework-btn ${selectedFrameworks.includes(framework.id) ? 'selected' : ''}`}
@@ -390,43 +484,7 @@ const FrameworkLibrary = () => {
               </div>
 
               {/* Expanded Details */}
-              {expandedFramework === framework.id && framework.domains.length > 0 && (
-                <div className="framework-details">
-                  <h4 className="details-title">Framework Structure:</h4>
-                  <div className="domains-list">
-                    {framework.domains.map(domain => (
-                      <div key={domain.id} className="domain-item">
-                        <div className="domain-header">
-                          <i className="fas fa-folder"></i>
-                          <span className="domain-name">{domain.name}</span>
-                          <span className="control-count">{domain.control_count} controls</span>
-                        </div>
-                        {domain.categories && domain.categories.length > 0 && (
-                          <div className="categories-list">
-                            {domain.categories.map(category => (
-                              <div key={category.id} className="category-item">
-                                <i className="fas fa-folder-open"></i>
-                                <span>{category.name}</span>
-                                {category.subcategories && (
-                                  <div className="subcategories-list">
-                                    {category.subcategories.map(sub => (
-                                      <div key={sub.id} className="subcategory-item">
-                                        <i className="fas fa-file-alt"></i>
-                                        <span>{sub.name}</span>
-                                        <span className="count">({sub.control_count})</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {expandedFramework === framework.id && renderFrameworkDetails(framework)}
             </div>
           ))}
         </div>

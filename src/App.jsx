@@ -1,6 +1,7 @@
 // src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { OnboardingProvider } from './contexts/OnboardingContext'; 
 import Layout from './components/layout/Layout';
 import Landing from './pages/Landing';
 import Onboarding from './pages/Onboarding';
@@ -13,6 +14,7 @@ import TeamSetup from './pages/TeamSetup';
 import Pricing from './pages/Pricing';
 import FrameworkLibrary from './pages/FrameworkLibrary';
 import Checkout from './pages/Checkout';
+import PendingActivation from './pages/PendingActivation';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
@@ -58,6 +60,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
+    <OnboardingProvider>
     <Router>
       <Routes>
         {/* Public Routes with Layout (Header + Footer) */}
@@ -71,16 +74,18 @@ function App() {
           <Route path="/overview" element={<Overview />} />
           <Route path="/team-setup" element={<TeamSetup />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/select-plan" element={<Pricing />} />
+        <Route path="/frameworks" element={<FrameworkLibrary />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/pending-activation" element={<PendingActivation />} />
         </Route>
 
         {/* Auth Routes without Layout (Full Screen) */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* User Onboarding Flow (After Signup) - No Layout */}
-        <Route path="/select-plan" element={<Pricing />} />
-        <Route path="/frameworks" element={<FrameworkLibrary />} />
-        <Route path="/checkout" element={<Checkout />} />
+      
+        
 
         {/* Tenant User Routes - COMPLETE SYSTEM */}
        <Route path="/app/*" element={<TenantLayout />}>
@@ -127,7 +132,7 @@ function App() {
           <Route path="ai-dashboard" element={<AIDashboard />} />
           {/* Tenant Management Routes */}
           <Route path="tenants" element={<TenantsDashboard />} />
-          <Route path="tenants/:id" element={<TenantDetailView />} />
+          <Route path="tenants/:tenantSlug" element={<TenantDetailView />} />
           <Route path="subscription-plans" element={<SubscriptionPlansList />} />
           <Route path="billing" element={<BillingHistory />} />
           <Route path="audit-logs" element={<AuditLogs />} />
@@ -137,6 +142,7 @@ function App() {
 
       </Routes>
     </Router>
+    </OnboardingProvider>
   );
 }
 

@@ -4,35 +4,56 @@ import '../styles/TenantManagement.css';
 
 const ActivateTenantModal = ({ isOpen, onClose, onSubmit, tenant, frameworks = [] }) => {
   const [formData, setFormData] = useState({
-    framework_id: '',
+    framework_ids: [], // ✅ CHANGED: Now array of IDs
     customization_level: 'CONTROL_LEVEL',
     payment_id: ''
   });
 
   const [errors, setErrors] = useState({});
-  const [selectedFramework, setSelectedFramework] = useState(null);
+  const [selectedFrameworks, setSelectedFrameworks] = useState([]);
 
-  useEffect(() => {
-    if (!isOpen) return;
+useEffect(() => {
+    if (!isOpen || !tenant) return;
 
+    // ✅ Try to get requested frameworks from tenant OR sessionStorage
+    let requestedFrameworks = tenant.requested_frameworks || [];
+    
+    // Fallback: If tenant doesn't have requested_frameworks, try sessionStorage
+    if (!requestedFrameworks || requestedFrameworks.length === 0) {
+      try {
+        const storedFrameworks = sessionStorage.getItem('requested_frameworks');
+        if (storedFrameworks) {
+          requestedFrameworks = JSON.parse(storedFrameworks);
+          console.log('📦 Loaded requested frameworks from sessionStorage:', requestedFrameworks);
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to parse requested_frameworks from sessionStorage:', err);
+      }
+    }
+
+    console.log('🎯 Final requested frameworks:', requestedFrameworks);
+    
+    const requestedIds = requestedFrameworks.map(f => f.id);
+    
     // Reset form
     setFormData({
-      framework_id: '',
+      framework_ids: requestedIds, // ✅ Pre-populate with requested
       customization_level: 'CONTROL_LEVEL',
       payment_id: ''
     });
     setErrors({});
-    setSelectedFramework(null);
-  }, [isOpen]);
+    
+    // ✅ Set selected frameworks for display
+    const preSelected = frameworks.filter(f => requestedIds.includes(f.id));
+    setSelectedFrameworks(preSelected);
+    
+    console.log('✅ Pre-selected frameworks:', preSelected);
+  }, [isOpen, tenant, frameworks]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === 'framework_id') {
-      const framework = frameworks.find(f => f.id === value);
-      setSelectedFramework(framework);
-    }
-    
+
     setFormData(prev => ({ ...prev, [name]: value }));
 
     if (errors[name]) {
@@ -40,11 +61,39 @@ const ActivateTenantModal = ({ isOpen, onClose, onSubmit, tenant, frameworks = [
     }
   };
 
+  // ✅ NEW: Handle framework checkbox toggle
+  const handleFrameworkToggle = (frameworkId) => {
+    setFormData(prev => {
+      const isSelected = prev.framework_ids.includes(frameworkId);
+
+      const newIds = isSelected
+        ? prev.framework_ids.filter(id => id !== frameworkId)
+        : [...prev.framework_ids, frameworkId];
+
+      return { ...prev, framework_ids: newIds };
+    });
+
+    // Update selected frameworks for display
+    const framework = frameworks.find(f => f.id === frameworkId);
+    if (framework) {
+      setSelectedFrameworks(prev => {
+        const isSelected = prev.some(f => f.id === frameworkId);
+        return isSelected
+          ? prev.filter(f => f.id !== frameworkId)
+          : [...prev, framework];
+      });
+    }
+
+    if (errors.framework_ids) {
+      setErrors(prev => ({ ...prev, framework_ids: '' }));
+    }
+  };
+
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.framework_id) {
-      newErrors.framework_id = 'Framework is required';
+    if (!formData.framework_ids || formData.framework_ids.length === 0) {
+      newErrors.framework_ids = 'At least one framework is required'; // ✅ CHANGED
     }
 
     return newErrors;
@@ -60,7 +109,7 @@ const ActivateTenantModal = ({ isOpen, onClose, onSubmit, tenant, frameworks = [
     }
 
     const submitData = {
-      framework_id: formData.framework_id,
+      framework_ids: formData.framework_ids,
       customization_level: formData.customization_level,
       payment_id: formData.payment_id.trim() || undefined
     };
@@ -132,56 +181,76 @@ const ActivateTenantModal = ({ isOpen, onClose, onSubmit, tenant, frameworks = [
 
           {/* Framework Selection */}
           <div className="form-section">
-            <h3 className="form-section-title">Initial Framework</h3>
+            <h3 className="form-section-title">Select Frameworks</h3>
+
+            {/* Show requested frameworks notice */}
+            {tenant?.requested_frameworks && tenant.requested_frameworks.length > 0 && (
+              <div className="info-banner info-blue" style={{ marginBottom: '16px' }}>
+                <i className="fas fa-info-circle"></i>
+                <div>
+                  <strong>Requested Frameworks Pre-Selected</strong>
+                  <p>The user requested {tenant.requested_frameworks.length} framework(s). You can add or remove as needed.</p>
+                </div>
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">
-                Select Framework <span className="required">*</span>
+                Select Frameworks <span className="required">*</span>
               </label>
-              <select
-                name="framework_id"
-                className={`form-input ${errors.framework_id ? 'error' : ''}`}
-                value={formData.framework_id}
-                onChange={handleChange}
-              >
-                <option value="">-- Select Framework --</option>
+
+              {/* Framework Checkboxes */}
+              <div className="framework-checkboxes">
                 {frameworks.map(framework => (
-                  <option key={framework.id} value={framework.id}>
-                    {framework.name} {framework.version && `(v${framework.version})`}
-                  </option>
+                  <label key={framework.id} className="framework-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.framework_ids.includes(framework.id)}
+                      onChange={() => handleFrameworkToggle(framework.id)}
+                      className="framework-checkbox-input"
+                    />
+                    <div className="framework-checkbox-content">
+                      <div className="framework-checkbox-header">
+                        <span className="framework-checkbox-name">{framework.name}</span>
+                        {framework.version && (
+                          <span className="framework-checkbox-version">v{framework.version}</span>
+                        )}
+                      </div>
+                      {framework.description && (
+                        <p className="framework-checkbox-description">{framework.description}</p>
+                      )}
+                      {framework.total_controls > 0 && (
+                        <div className="framework-checkbox-stats">
+                          <span><i className="fas fa-list-check"></i> {framework.total_controls} Controls</span>
+                          {framework.total_domains > 0 && (
+                            <span><i className="fas fa-layer-group"></i> {framework.total_domains} Domains</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </label>
                 ))}
-              </select>
-              {errors.framework_id && <span className="error-text">{errors.framework_id}</span>}
+              </div>
+
+              {errors.framework_ids && <span className="error-text">{errors.framework_ids}</span>}
+
               <small className="helper-text">
-                The tenant will be subscribed to this framework during activation
+                Select one or more frameworks. The tenant will be subscribed to all selected frameworks during activation.
               </small>
             </div>
 
-            {/* Framework Details */}
-            {selectedFramework && (
-              <div className="framework-preview">
-                <div className="framework-preview-header">
-                  <h4>{selectedFramework.name}</h4>
-                  {selectedFramework.version && (
-                    <span className="framework-version">v{selectedFramework.version}</span>
-                  )}
+            {/* Selected Frameworks Summary */}
+            {selectedFrameworks.length > 0 && (
+              <div className="selected-frameworks-summary">
+                <h4>Selected Frameworks ({selectedFrameworks.length})</h4>
+                <div className="selected-frameworks-list">
+                  {selectedFrameworks.map(framework => (
+                    <span key={framework.id} className="selected-framework-tag">
+                      <i className="fas fa-check-circle"></i>
+                      {framework.name}
+                    </span>
+                  ))}
                 </div>
-                <p className="framework-description">{selectedFramework.description}</p>
-                
-                {selectedFramework.total_controls > 0 && (
-                  <div className="framework-stats">
-                    <div className="framework-stat">
-                      <i className="fas fa-list-check"></i>
-                      <span>{selectedFramework.total_controls} Controls</span>
-                    </div>
-                    {selectedFramework.total_domains > 0 && (
-                      <div className="framework-stat">
-                        <i className="fas fa-layer-group"></i>
-                        <span>{selectedFramework.total_domains} Domains</span>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -218,7 +287,7 @@ const ActivateTenantModal = ({ isOpen, onClose, onSubmit, tenant, frameworks = [
                   </div>
                 </div>
               )}
-              
+
               {formData.customization_level === 'CONTROL_LEVEL' && (
                 <div className="info-box info-blue">
                   <i className="fas fa-edit"></i>
@@ -228,7 +297,7 @@ const ActivateTenantModal = ({ isOpen, onClose, onSubmit, tenant, frameworks = [
                   </div>
                 </div>
               )}
-              
+
               {formData.customization_level === 'FULL' && (
                 <div className="info-box info-purple">
                   <i className="fas fa-wand-magic-sparkles"></i>
